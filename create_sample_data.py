@@ -1,24 +1,36 @@
 """
 create_sample_data.py
 ---------------------
-Generates all sample Excel file pairs for Examples 1–4 from the project plan.
+Generates realistic transaction-level Excel file pairs for Examples 1–4.
 
-Each example produces two files (period1.xlsx and period2.xlsx) saved into
-sample_data/<example_folder>/. Files include extra realistic columns (IDs,
-dates, regions, managers etc.) alongside the key metric columns, mirroring
-how real-world data exports typically look.
+Each example produces two files (period1 / period2) saved into
+sample_data/<example_folder>/. Files are raw transaction / session /
+account-level data — not pre-aggregated — so the app and tools can
+compute metrics (success rate, total revenue, conversion rate, etc.)
+from the underlying records, just as a real analyst would.
+
+Row counts:
+  Example 1 — Product  : ~350 rows per file (payment transaction log)
+  Example 2 — Marketing: ~550 rows per file (session log)
+  Example 3 — Revenue  : ~480 rows per file (payment transaction table)
+  Example 4 — Mixed    : ~80  rows per file (account records)
 
 Run:
     python3 create_sample_data.py
 """
 
 import os
+import numpy as np
 import pandas as pd
+from datetime import date, timedelta
+
+rng = np.random.default_rng(42)   # fixed seed → reproducible files
 
 OUTPUT_BASE = "sample_data"
 
+
 # ---------------------------------------------------------------------------
-# Helper
+# Shared helpers
 # ---------------------------------------------------------------------------
 
 def save(df: pd.DataFrame, folder: str, filename: str):
@@ -26,267 +38,428 @@ def save(df: pd.DataFrame, folder: str, filename: str):
     os.makedirs(path, exist_ok=True)
     full_path = os.path.join(path, filename)
     df.to_excel(full_path, index=False)
-    print(f"  Saved: {full_path}")
+    print(f"  Saved {len(df):>4} rows → {full_path}")
+
+
+def random_dates_in_range(start: date, end: date, n: int) -> list:
+    delta = (end - start).days
+    offsets = rng.integers(0, delta + 1, size=n)
+    return [str(start + timedelta(days=int(d))) for d in offsets]
+
+
+def random_times(n: int) -> list:
+    h = rng.integers(0, 24, size=n)
+    m = rng.integers(0, 60, size=n)
+    return [f"{hh:02d}:{mm:02d}:{rng.integers(0,60):02d}" for hh, mm in zip(h, m)]
+
+
+def seq_ids(prefix: str, n: int, start: int = 1) -> list:
+    return [f"{prefix}{str(i).zfill(6)}" for i in range(start, start + n)]
 
 
 # ===========================================================================
-# Example 1 — Product Metrics (Week-over-Week)
+# Example 1 — Product Metrics  (Payment transaction log, week-over-week)
 # ===========================================================================
-# Key metrics : active_users (notable drop), csat_score (notable drop),
-#               success_rate (calm / stable)
-# Extra cols  : team, region, product_version, response_time_ms,
-#               bug_reports, tickets_opened, tickets_resolved,
-#               avg_session_mins
-# Rows        : 10 product teams
+# Each row = one payment transaction attempt.
+# Key fields  : status (Success / Failed), csat_score, response_time_ms
+# Derived KPIs: success_rate = Success / total,  avg CSAT,  active_users (distinct user_ids)
+# Engineered  : Period 2 has more failures (rate drops ~92% → ~85%) and lower CSAT
+# Extra cols  : transaction_id, reference_number, user_id, team, region,
+#               product_version, payment_method, amount_usd, error_code,
+#               device_type, channel, currency
 # ===========================================================================
 
 def create_example1():
-    print("\n[Example 1] Product Metrics...")
+    print("\n[Example 1] Product Metrics — payment transaction log")
 
-    teams = [
-        "Mobile", "Web", "API", "Desktop",
-        "Analytics", "Payments", "Auth", "Search",
-        "Notifications", "Admin",
-    ]
-    regions        = ["EMEA", "NA", "APAC", "NA", "EMEA", "NA", "APAC", "EMEA", "NA", "APAC"]
-    product_vers   = ["v3.2", "v3.2", "v2.8", "v3.1", "v3.2", "v2.9", "v3.2", "v3.0", "v3.2", "v2.8"]
+    n1, n2 = 350, 370
 
-    # --- Period 1: Week of 2025-04-28 ---
-    p1 = pd.DataFrame({
-        "week_start":          ["2025-04-28"] * 10,
-        "team":                teams,
-        "region":              regions,
-        "product_version":     product_vers,
-        "success_rate_pct":    [92.1, 91.8, 93.0, 90.5, 91.2, 92.6, 93.1, 90.8, 91.5, 92.0],
-        "active_users":        [2450, 3800, 1200, 870,  1560, 2100, 980,  1340, 760,  430 ],
-        "csat_score":          [4.3,  4.4,  4.2,  4.1,  4.5,  4.3,  4.4,  4.2,  4.0,  4.3 ],
-        "response_time_ms":    [210,  185,  140,  320,  195,  160,  175,  205,  230,  310 ],
-        "bug_reports":         [12,   8,    5,    18,   7,    4,    6,    10,   14,   9   ],
-        "tickets_opened":      [88,   120,  45,   62,   95,   74,   38,   83,   51,   29  ],
-        "tickets_resolved":    [80,   115,  43,   55,   90,   72,   36,   79,   48,   26  ],
-        "avg_session_mins":    [8.4,  12.1, 5.2,  6.8,  9.7,  7.3,  6.1,  8.9,  4.5,  3.2 ],
-    })
+    teams          = ["Mobile", "Web", "API", "Desktop", "Payments", "Auth", "Search", "Notifications"]
+    regions        = ["NA", "EMEA", "APAC"]
+    product_vers   = ["v3.2", "v3.1", "v2.9", "v3.0"]
+    pay_methods    = ["Credit Card", "Debit Card", "Bank Transfer", "PayPal", "Apple Pay", "Google Pay"]
+    devices        = ["Mobile", "Desktop", "Tablet"]
+    channels       = ["App", "Web", "API"]
+    currencies     = ["USD", "USD", "USD", "GBP", "EUR", "USD", "USD", "CAD"]
+    error_codes    = ["ERR_TIMEOUT", "ERR_INSUFFICIENT_FUNDS", "ERR_INVALID_CARD",
+                      "ERR_NETWORK", "ERR_DECLINED", "ERR_AUTH_FAILED"]
 
-    # --- Period 2: Week of 2025-05-05 ---
-    # active_users and csat_score drop notably; success_rate stays calm
-    p2 = pd.DataFrame({
-        "week_start":          ["2025-05-05"] * 10,
-        "team":                teams,
-        "region":              regions,
-        "product_version":     product_vers,
-        "success_rate_pct":    [91.8, 91.5, 92.7, 90.1, 91.0, 92.3, 92.9, 90.5, 91.2, 91.7],
-        "active_users":        [1980, 3100, 940,  650,  1210, 1650, 740,  1050, 580,  310 ],
-        "csat_score":          [3.8,  3.7,  3.6,  3.5,  3.9,  3.7,  3.8,  3.6,  3.4,  3.7 ],
-        "response_time_ms":    [225,  192,  148,  335,  201,  168,  182,  218,  244,  325 ],
-        "bug_reports":         [18,   14,   9,    24,   11,   7,    10,   15,   19,   13  ],
-        "tickets_opened":      [102,  138,  58,   74,   110,  88,   47,   96,   63,   38  ],
-        "tickets_resolved":    [88,   121,  49,   61,   98,   79,   42,   85,   55,   31  ],
-        "avg_session_mins":    [7.9,  11.3, 4.8,  6.1,  9.0,  6.9,  5.7,  8.2,  4.1,  2.9 ],
-    })
+    def make_product_file(n, week_start, week_end, success_rate, avg_csat, id_start):
+        statuses    = rng.choice(["Success", "Failed"],  size=n,
+                                  p=[success_rate, 1 - success_rate])
+        csat_mask   = rng.random(n) < 0.28          # ~28% of txns get a CSAT response
+        csat_raw    = rng.normal(avg_csat, 0.4, n).clip(1, 5).round(1)
+        csat_col    = [round(float(c), 1) if m else None for c, m in zip(csat_raw, csat_mask)]
+        amounts     = rng.uniform(25, 850, n).round(2)
+        error_col   = [rng.choice(error_codes) if s == "Failed" else None for s in statuses]
+
+        return pd.DataFrame({
+            "transaction_id":    seq_ids("TXN-P1-", n, id_start),
+            "reference_number":  seq_ids("REF-", n, id_start * 3),
+            "date":              random_dates_in_range(week_start, week_end, n),
+            "time":              random_times(n),
+            "user_id":           seq_ids("USR-", n, rng.integers(1000, 9000)),
+            "team":              rng.choice(teams, size=n),
+            "region":            rng.choice(regions, size=n),
+            "country":           rng.choice(["US", "UK", "DE", "FR", "AU", "CA", "SG", "IN"], size=n),
+            "product_version":   rng.choice(product_vers, size=n),
+            "payment_method":    rng.choice(pay_methods, size=n),
+            "currency":          rng.choice(currencies, size=n),
+            "amount_usd":        amounts,
+            "status":            statuses,
+            "error_code":        error_col,
+            "response_time_ms":  rng.integers(80, 620, size=n),
+            "csat_score":        csat_col,
+            "device_type":       rng.choice(devices, size=n),
+            "channel":           rng.choice(channels, size=n),
+            "is_retry":          rng.choice(["Yes", "No"], size=n, p=[0.12, 0.88]),
+            "merchant_category": rng.choice(["SaaS", "E-commerce", "Healthcare",
+                                              "Finance", "Education", "Retail"], size=n),
+        })
+
+    p1 = make_product_file(n1,
+                            date(2025, 4, 28), date(2025, 5, 4),
+                            success_rate=0.921, avg_csat=4.3, id_start=1)
+    p2 = make_product_file(n2,
+                            date(2025, 5, 5),  date(2025, 5, 11),
+                            success_rate=0.851, avg_csat=3.7, id_start=n1 + 1)
 
     save(p1, "example1_product_metrics", "period1_week_apr28.xlsx")
     save(p2, "example1_product_metrics", "period2_week_may05.xlsx")
 
 
 # ===========================================================================
-# Example 2 — Marketing Metrics (Week-over-Week)
+# Example 2 — Marketing Metrics  (Session log, week-over-week)
 # ===========================================================================
-# Key metrics : total_visits (spike up), signups (down), conversion_rate (drop)
-# Extra cols  : channel, campaign_id, region, unique_visitors, bounce_rate,
-#               avg_time_on_page_secs, pages_per_session, ad_spend_usd,
-#               impressions, click_through_rate_pct
-# Rows        : 8 marketing channels
+# Each row = one website / app session.
+# Key fields  : channel, signed_up, converted (bool)
+# Derived KPIs: total_visits = row count,  signups = sum(signed_up),
+#               conversion_rate = sum(converted) / total
+# Engineered  : Period 2 has more traffic (visits ↑) but signups and
+#               conversion_rate drop notably
+# Extra cols  : session_id, user_id, date, time, device, landing_page,
+#               referral_source, campaign_id, region, pages_viewed,
+#               time_on_site_secs, bounced, ad_click, utm_medium
 # ===========================================================================
 
 def create_example2():
-    print("\n[Example 2] Marketing Metrics...")
+    print("\n[Example 2] Marketing Metrics — session log")
 
-    channels = [
-        "Organic Search", "Paid Search", "Social Media",
-        "Email", "Referral", "Direct", "Display Ads", "Affiliate",
-    ]
-    campaign_ids = ["ORG-01", "PAD-07", "SOC-12", "EML-04", "REF-09", "DIR-01", "DSP-03", "AFF-06"]
-    regions      = ["Global", "NA", "EMEA", "NA", "APAC", "Global", "NA", "EMEA"]
+    n1, n2 = 520, 680    # n2 > n1  →  traffic spike in Period 2
 
-    # --- Period 1: Week of 2025-04-28 ---
-    p1 = pd.DataFrame({
-        "week_start":               ["2025-04-28"] * 8,
-        "channel":                  channels,
-        "campaign_id":              campaign_ids,
-        "region":                   regions,
-        "total_visits":             [18500, 9200,  7400, 5100, 3800, 4200, 2900, 1600],
-        "unique_visitors":          [15200, 7800,  6100, 4300, 3100, 3700, 2400, 1350],
-        "signups":                  [420,   310,   185,  260,  140,  95,   88,   62  ],
-        "bounce_rate_pct":          [38.2,  42.5,  51.3, 28.4, 35.6, 32.1, 58.7, 44.2],
-        "conversion_rate_pct":      [2.8,   3.4,   2.5,  5.1,  3.7,  2.3,  3.0,  3.9 ],
-        "avg_time_on_page_secs":    [142,   98,    74,   210,  165,  188,  62,   110 ],
-        "pages_per_session":        [4.2,   3.1,   2.8,  5.6,  3.9,  4.8,  2.1,  3.4 ],
-        "ad_spend_usd":             [0,     12500, 8200, 3100, 0,    0,    5400, 2800],
-        "impressions":              [0,     98000, 74000,52000,0,    0,    120000,38000],
-        "click_through_rate_pct":   [0,     9.4,   10.0, 9.8,  0,    0,    2.4,  4.2 ],
-    })
+    channels      = ["Organic Search", "Paid Search", "Social Media",
+                     "Email", "Referral", "Direct", "Display Ads", "Affiliate"]
+    ch_weights_p1 = [0.30, 0.20, 0.16, 0.12, 0.09, 0.07, 0.04, 0.02]
+    ch_weights_p2 = [0.28, 0.24, 0.18, 0.10, 0.08, 0.06, 0.04, 0.02]   # more paid/social
+    devices       = ["Mobile", "Desktop", "Tablet"]
+    landing_pages = ["/home", "/product", "/pricing", "/blog", "/features",
+                     "/signup", "/demo", "/case-studies"]
+    referrers     = ["google.com", "facebook.com", "linkedin.com", "twitter.com",
+                     "bing.com", "newsletter", "partner-site.com", "(direct)"]
+    campaigns     = ["CAMP-SPR25", "CAMP-RET01", "CAMP-BRD02", "CAMP-NL03",
+                     "CAMP-SOC04", "CAMP-ORG", "CAMP-AFF05", "CAMP-DSP06"]
+    regions       = ["NA", "EMEA", "APAC", "LATAM"]
+    utm_mediums   = ["organic", "cpc", "social", "email", "referral", "none", "display", "affiliate"]
 
-    # --- Period 2: Week of 2025-05-05 ---
-    # visits spike up; signups and conversion_rate drop
-    p2 = pd.DataFrame({
-        "week_start":               ["2025-05-05"] * 8,
-        "channel":                  channels,
-        "campaign_id":              campaign_ids,
-        "region":                   regions,
-        "total_visits":             [22100, 11800, 9600, 5400, 4200, 4800, 3700, 1950],
-        "unique_visitors":          [18400, 9900,  7900, 4600, 3500, 4200, 3100, 1650],
-        "signups":                  [310,   228,   134,  195,  98,   72,   60,   44  ],
-        "bounce_rate_pct":          [42.1,  47.8,  56.4, 31.2, 38.9, 35.4, 62.1, 48.7],
-        "conversion_rate_pct":      [1.8,   1.9,   1.4,  3.6,  2.3,  1.5,  1.6,  2.3 ],
-        "avg_time_on_page_secs":    [128,   87,    68,   198,  151,  174,  54,   99  ],
-        "pages_per_session":        [3.8,   2.7,   2.4,  5.1,  3.5,  4.3,  1.8,  3.0 ],
-        "ad_spend_usd":             [0,     14200, 9500, 3100, 0,    0,    6800, 3200],
-        "impressions":              [0,     115000,88000,52000,0,    0,    145000,46000],
-        "click_through_rate_pct":   [0,     10.3,  10.9, 10.4, 0,    0,    2.5,  4.2 ],
-    })
+    def make_marketing_file(n, week_start, week_end, signup_rate, conversion_rate, ch_weights, id_start):
+        channel_idx = rng.choice(len(channels), size=n, p=ch_weights)
+        signed_up   = (rng.random(n) < signup_rate).astype(int)
+        converted   = np.where(signed_up, (rng.random(n) < 0.35).astype(int),
+                               (rng.random(n) < conversion_rate * 0.3).astype(int))
+        pages       = rng.integers(1, 18, size=n)
+        bounced     = (pages == 1).astype(int)
+        time_on     = np.where(bounced, rng.integers(5, 30, size=n),
+                               rng.integers(45, 720, size=n))
+
+        return pd.DataFrame({
+            "session_id":           seq_ids("SES-", n, id_start),
+            "user_id":              seq_ids("USR-MKT-", n, rng.integers(5000, 50000)),
+            "date":                 random_dates_in_range(week_start, week_end, n),
+            "time":                 random_times(n),
+            "channel":              [channels[i] for i in channel_idx],
+            "campaign_id":          [campaigns[i] for i in channel_idx],
+            "utm_medium":           [utm_mediums[i] for i in channel_idx],
+            "region":               rng.choice(regions, size=n),
+            "country":              rng.choice(["US", "UK", "DE", "FR", "CA",
+                                                "AU", "BR", "SG", "IN", "NL"], size=n),
+            "device":               rng.choice(devices, size=n, p=[0.54, 0.38, 0.08]),
+            "landing_page":         rng.choice(landing_pages, size=n),
+            "referral_source":      rng.choice(referrers, size=n),
+            "pages_viewed":         pages,
+            "time_on_site_secs":    time_on,
+            "bounced":              bounced,
+            "signed_up":            signed_up,
+            "converted":            converted,
+            "ad_click":             (rng.random(n) < 0.18).astype(int),
+            "returning_visitor":    rng.choice([0, 1], size=n, p=[0.62, 0.38]),
+            "browser":              rng.choice(["Chrome", "Safari", "Firefox",
+                                                "Edge", "Other"], size=n,
+                                               p=[0.55, 0.25, 0.09, 0.08, 0.03]),
+            "screen_resolution":    rng.choice(["1920x1080", "1366x768", "375x667",
+                                                "414x896", "1280x800", "2560x1440"], size=n),
+        })
+
+    p1 = make_marketing_file(n1,
+                              date(2025, 4, 28), date(2025, 5, 4),
+                              signup_rate=0.082, conversion_rate=0.028,
+                              ch_weights=ch_weights_p1, id_start=1)
+    p2 = make_marketing_file(n2,
+                              date(2025, 5, 5),  date(2025, 5, 11),
+                              signup_rate=0.054, conversion_rate=0.019,
+                              ch_weights=ch_weights_p2, id_start=n1 + 1)
 
     save(p1, "example2_marketing_metrics", "period1_week_apr28.xlsx")
     save(p2, "example2_marketing_metrics", "period2_week_may05.xlsx")
 
 
 # ===========================================================================
-# Example 3 — Revenue Metrics (Month-over-Month)
+# Example 3 — Revenue  (Payment transaction table, month-over-month)
 # ===========================================================================
-# Key metrics : total_monthly_revenue (Product Line C significant drop),
-#               units_sold, avg_order_value
-# Extra cols  : product_line, region, account_manager, quarter,
-#               new_customers, churned_customers, gross_margin_pct,
-#               returns, support_tickets, nps_score
-# Rows        : 5 product lines
+# Each row = one payment transaction.
+# Key fields  : product_line (A / B / C), amount_usd, status
+# Derived KPIs: total revenue per product = sum(amount_usd where status=Completed)
+# Engineered  : Product Line C has significantly fewer & lower-value transactions
+#               in Period 2, causing a ~30% revenue drop for that line.
+#               Lines A and B remain stable.
+# Extra cols  : transaction_id, invoice_number, customer_id, customer_name,
+#               country, region, account_manager, salesperson, product_name,
+#               plan_type, payment_method, currency, status, refund_reason
 # ===========================================================================
 
 def create_example3():
-    print("\n[Example 3] Revenue Metrics...")
+    print("\n[Example 3] Revenue — payment transaction table")
 
-    lines    = ["Product Line A", "Product Line B", "Product Line C", "Product Line D", "Product Line E"]
-    regions  = ["NA", "EMEA", "APAC", "NA", "EMEA"]
-    managers = ["Sarah Mitchell", "James Okafor", "Priya Nair", "Carlos Rivera", "Emma Thompson"]
-    quarters = ["Q2 2025"] * 5
+    product_lines  = ["Product Line A", "Product Line B", "Product Line C"]
+    product_names  = {
+        "Product Line A": ["Alpha Enterprise", "Alpha Pro+", "Alpha Teams"],
+        "Product Line B": ["Beta Business",   "Beta Standard", "Beta Starter"],
+        "Product Line C": ["Core Lite",       "Core Basic",    "Core Free+"],
+    }
+    plan_types     = ["Annual", "Monthly", "Quarterly", "One-time"]
+    pay_methods    = ["Credit Card", "Bank Transfer", "ACH", "Wire Transfer", "PayPal"]
+    currencies     = ["USD", "USD", "EUR", "GBP", "USD", "CAD", "USD", "AUD"]
+    regions        = ["NA", "EMEA", "APAC", "LATAM"]
+    countries      = ["US", "UK", "DE", "FR", "CA", "AU", "SG", "NL", "BR", "IN"]
+    managers       = ["Sarah Mitchell", "James Okafor", "Priya Nair",
+                      "Carlos Rivera", "Emma Thompson"]
+    salespersons   = ["Alex Huang", "Mia Fernandez", "Liam Osei",
+                      "Chloe Dupont", "Noah Patel", "Sofia Andersen"]
+    refund_reasons = ["Customer Request", "Duplicate Charge", "Service Issue",
+                      "Billing Error", "Cancellation"]
 
-    # --- Period 1: April 2025 ---
-    p1 = pd.DataFrame({
-        "month":                    ["April 2025"] * 5,
-        "product_line":             lines,
-        "region":                   regions,
-        "account_manager":          managers,
-        "quarter":                  quarters,
-        "total_monthly_revenue":    [125000, 98000, 87000, 210000, 65000],
-        "units_sold":               [1240,   870,   920,   2100,   580  ],
-        "avg_order_value":          [100.8,  112.6, 94.6,  100.0,  112.1],
-        "new_customers":            [42,     31,    38,    74,     22   ],
-        "churned_customers":        [8,      5,     7,     12,     4    ],
-        "gross_margin_pct":         [62.4,   58.1,  60.3,  64.8,   57.2 ],
-        "returns":                  [28,     19,    24,    45,     11   ],
-        "support_tickets":          [64,     48,    55,    98,     32   ],
-        "nps_score":                [48,     42,    45,    52,     39   ],
-    })
+    # Transaction counts and amount ranges per product per period
+    # Period 1 (April): A=90, B=150, C=240  → totals approx A=£126k B=£97k C=£86k
+    # Period 2 (May):   A=88, B=145, C=165  → totals approx A=£123k B=£94k C=£60k
 
-    # --- Period 2: May 2025 ---
-    # Product Line C drops significantly; others stable
-    p2 = pd.DataFrame({
-        "month":                    ["May 2025"] * 5,
-        "product_line":             lines,
-        "region":                   regions,
-        "account_manager":          managers,
-        "quarter":                  quarters,
-        "total_monthly_revenue":    [123000, 95000, 61000, 208000, 64000],
-        "units_sold":               [1210,   845,   645,   2080,   570  ],
-        "avg_order_value":          [101.7,  112.4, 94.6,  100.0,  112.3],
-        "new_customers":            [39,     28,    18,    71,     21   ],
-        "churned_customers":        [9,      6,     24,    13,     5    ],
-        "gross_margin_pct":         [62.1,   57.8,  55.4,  64.5,   57.0 ],
-        "returns":                  [31,     22,    48,    47,     12   ],
-        "support_tickets":          [68,     51,    112,   101,    34   ],
-        "nps_score":                [47,     41,    28,    51,     38   ],
-    })
+    config = {
+        # (n_transactions, amount_low, amount_high, refund_rate)
+        "p1": {
+            "Product Line A": (90,  800, 2200, 0.04),
+            "Product Line B": (150, 350, 1000, 0.05),
+            "Product Line C": (240,  80,  480, 0.06),
+        },
+        "p2": {
+            "Product Line A": (88,  810, 2200, 0.04),
+            "Product Line B": (145, 350,  980, 0.05),
+            "Product Line C": (165,  75,  470, 0.09),   # fewer txns, higher refund
+        },
+    }
+
+    def make_revenue_file(period_config, month_start, month_end, id_start):
+        rows = []
+        txn_counter = id_start
+        for pl, (n, lo, hi, refund_rate) in period_config.items():
+            pnames = product_names[pl]
+            statuses = rng.choice(
+                ["Completed", "Refunded", "Failed"],
+                size=n,
+                p=[1 - refund_rate - 0.02, refund_rate, 0.02],
+            )
+            amounts = rng.uniform(lo, hi, size=n).round(2)
+
+            for i in range(n):
+                rows.append({
+                    "transaction_id":   f"TXN-REV-{str(txn_counter).zfill(6)}",
+                    "invoice_number":   f"INV-{str(txn_counter * 7 + 1001).zfill(7)}",
+                    "date":             rng.choice(
+                                            random_dates_in_range(month_start, month_end, 1)
+                                        ),
+                    "time":             random_times(1)[0],
+                    "customer_id":      f"CUST-{str(rng.integers(1000, 9999)).zfill(4)}",
+                    "customer_name":    rng.choice([
+                                            "Apex Corp", "BlueStar Ltd", "Crestwood Inc",
+                                            "Delta Group", "Echo Systems", "Frontier Co",
+                                            "Greenfield Partners", "Horizon LLC",
+                                            "Iris Holdings", "JetStream GmbH",
+                                            "Keystone AG", "Luminary Srl",
+                                            "Marble Tech", "Nova Solutions",
+                                            "Orbit Digital", "Pinnacle Ventures",
+                                        ]),
+                    "region":           rng.choice(regions),
+                    "country":          rng.choice(countries),
+                    "account_manager":  rng.choice(managers),
+                    "salesperson":      rng.choice(salespersons),
+                    "product_line":     pl,
+                    "product_name":     rng.choice(pnames),
+                    "plan_type":        rng.choice(plan_types, p=[0.55, 0.30, 0.10, 0.05]),
+                    "payment_method":   rng.choice(pay_methods),
+                    "currency":         rng.choice(currencies),
+                    "amount_usd":       amounts[i],
+                    "status":           statuses[i],
+                    "refund_reason":    (rng.choice(refund_reasons)
+                                         if statuses[i] == "Refunded" else None),
+                    "is_new_customer":  rng.choice(["Yes", "No"], p=[0.22, 0.78]),
+                    "contract_type":    rng.choice(["Direct", "Reseller", "Partner"],
+                                                    p=[0.70, 0.20, 0.10]),
+                    "discount_pct":     round(float(rng.choice(
+                                            [0, 0, 0, 5, 10, 15, 20],
+                                            p=[0.40, 0.20, 0.15, 0.10, 0.08, 0.04, 0.03]
+                                        )), 1),
+                })
+                txn_counter += 1
+
+        df = pd.DataFrame(rows)
+        df = df.sample(frac=1, random_state=42).reset_index(drop=True)   # shuffle rows
+        return df
+
+    p1 = make_revenue_file(config["p1"],
+                            date(2025, 4, 1), date(2025, 4, 30), id_start=1)
+    p2 = make_revenue_file(config["p2"],
+                            date(2025, 5, 1), date(2025, 5, 31), id_start=600)
 
     save(p1, "example3_revenue_mom", "period1_april_2025.xlsx")
     save(p2, "example3_revenue_mom", "period2_may_2025.xlsx")
 
 
 # ===========================================================================
-# Example 4 — Mixed Dataset (Numeric + Categorical Changes)
+# Example 4 — Mixed Dataset  (Account records, month-over-month)
 # ===========================================================================
-# Key metrics : volume (numeric, moderate changes),
-#               rate_pct (numeric, moderate changes),
-#               score (numeric, minor changes),
-#               status (categorical — some flip Active → Inactive)
-# Extra cols  : record_id, account_name, region, account_manager,
-#               tier, contract_value_usd, last_contact_date,
-#               industry, employee_count
-# Rows        : 12 account records
+# Each row = one account / customer record.
+# Key fields  : status (Active / Inactive — categorical),
+#               volume, rate_pct, score (numeric)
+# Engineered  : ~18 accounts flip Active → Inactive in Period 2;
+#               volume, rate_pct, score all show moderate numeric changes.
+# Extra cols  : record_id, account_name, region, country, account_manager,
+#               industry, employee_count, tier, contract_value_usd,
+#               last_contact_date, renewal_date, support_tier, nps_score
 # ===========================================================================
 
 def create_example4():
-    print("\n[Example 4] Mixed Dataset...")
+    print("\n[Example 4] Mixed Dataset — account records")
 
-    record_ids    = [f"ACC-{str(i).zfill(3)}" for i in range(1, 13)]
+    n = 80
+
     account_names = [
         "Apex Technologies", "BlueStar Logistics", "Crestwood Finance",
         "Delta Healthcare", "Echo Retail", "Frontier Media",
         "Greenfield Energy", "Horizon Consulting", "Iris Manufacturing",
         "JetStream Airlines", "Keystone Pharma", "Luminary EdTech",
-    ]
-    regions   = ["NA", "EMEA", "NA", "APAC", "NA", "EMEA", "NA", "APAC", "EMEA", "NA", "APAC", "NA"]
-    managers  = [
-        "Dana Lee", "Tom Walsh", "Dana Lee", "Priya Nair",
-        "Tom Walsh", "Carlos Rivera", "Dana Lee", "Emma Thompson",
-        "Tom Walsh", "Carlos Rivera", "Priya Nair", "Dana Lee",
-    ]
-    tiers     = ["Enterprise", "Mid-Market", "Enterprise", "SMB", "Mid-Market", "Enterprise",
-                 "SMB", "Mid-Market", "Enterprise", "Mid-Market", "Enterprise", "SMB"]
-    industry  = ["Tech", "Logistics", "Finance", "Healthcare", "Retail", "Media",
-                 "Energy", "Consulting", "Manufacturing", "Airlines", "Pharma", "Education"]
-    emp_count = [5200, 1800, 3400, 8900, 620, 2100, 450, 1200, 4100, 12000, 6700, 310]
+        "Marble Dynamics", "Nova Legal", "Orbit Digital", "Pinnacle Ventures",
+        "Quorum Analytics", "Redwood Biotech", "Summit Architecture", "Tidal Payments",
+        "Umbrella Security", "Vertex Robotics", "Wavelength Audio", "Xenon Aerospace",
+        "Yellowstone Mining", "Zephyr Mobility", "Anchor Fintech", "Beacon Publishing",
+        "Cascade Networks", "Driftwood Creative", "Eclipse Automotive", "Forge Industries",
+        "Glacier Properties", "Halo Sportswear", "Indigo Hospitality", "Jade Commerce",
+        "Kite Insurance", "Lattice Software", "Mosaic Events", "Nectar Foods",
+        "Onyx Engineering", "Prism Textiles", "Quest Shipping", "Ridge Agriculture",
+        "Sterling Media", "Tempest Clean Energy", "Union Telecom", "Vantage Wealth",
+        "Wildfire Gaming", "Xcel Healthcare", "Yarrow Cosmetics", "Zenith Aerospace",
+        "Alpine Consulting", "Bright Futures NGO", "Cobalt Semiconductors",
+        "Dawn Hospitality", "Ember Logistics", "Flux Analytics", "Grove Pharma",
+        "Haven Insurance", "Impact Ventures", "Junction Rail", "Knoll Architecture",
+        "Lark Media", "Mantis Cybersecurity", "Nimbus Cloud", "Obsidian Mining",
+        "Pulse Wearables", "Quartz Construction", "Raven Defense", "Solace Health",
+        "Thorn Agritech", "Uplift Finance", "Valor Logistics", "Wren Publishing",
+        "Axis Motors", "Bloom Biotech", "Cipher Networks", "Dusk Realty",
+        "Eagle Fintech",
+    ][:n]
 
-    # --- Period 1 ---
-    p1 = pd.DataFrame({
-        "report_date":          ["2025-04-30"] * 12,
-        "record_id":            record_ids,
-        "account_name":         account_names,
-        "region":               regions,
-        "account_manager":      managers,
-        "industry":             industry,
-        "employee_count":       emp_count,
-        "tier":                 tiers,
-        "status":               ["Active"] * 12,
-        "volume":               [5200, 3100, 4800, 7200, 1500, 2900, 980,  3600, 4200, 8100, 6300, 750 ],
-        "rate_pct":             [78.4, 72.1, 80.5, 68.3, 74.2, 76.8, 65.4, 71.9, 79.2, 66.7, 77.5, 63.1],
-        "score":                [82,   75,   88,   71,   79,   84,   68,   76,   85,   70,   81,   65  ],
-        "contract_value_usd":   [124000,48000,98000,210000,22000,75000,15000,52000,115000,380000,175000,12000],
-        "last_contact_date":    ["2025-04-25","2025-04-22","2025-04-28","2025-04-20","2025-04-26",
-                                  "2025-04-24","2025-04-29","2025-04-23","2025-04-27","2025-04-21",
-                                  "2025-04-25","2025-04-28"],
-    })
+    industries  = rng.choice(["Technology", "Healthcare", "Finance", "Retail",
+                               "Logistics", "Energy", "Media", "Manufacturing",
+                               "Consulting", "Education", "Legal", "Pharma"], size=n)
+    regions     = rng.choice(["NA", "EMEA", "APAC", "LATAM"], size=n,
+                              p=[0.40, 0.30, 0.20, 0.10])
+    countries   = rng.choice(["US", "UK", "DE", "FR", "CA", "AU", "SG",
+                               "NL", "BR", "IN", "JP", "ZA"], size=n)
+    managers    = rng.choice(["Dana Lee", "Tom Walsh", "Priya Nair",
+                               "Carlos Rivera", "Emma Thompson"], size=n)
+    tiers       = rng.choice(["Enterprise", "Mid-Market", "SMB"],
+                              size=n, p=[0.25, 0.45, 0.30])
+    emp_counts  = rng.integers(50, 25000, size=n)
+    contracts   = rng.integers(8000, 450000, size=n)
+    support_tiers = rng.choice(["Platinum", "Gold", "Silver", "Standard"], size=n,
+                                p=[0.15, 0.30, 0.35, 0.20])
 
-    # --- Period 2 ---
-    # status: 4 accounts flip to Inactive (BlueStar, Echo, Greenfield, Luminary)
-    # volume, rate_pct, score: moderate numeric changes across the board
-    p2 = pd.DataFrame({
-        "report_date":          ["2025-05-31"] * 12,
-        "record_id":            record_ids,
-        "account_name":         account_names,
-        "region":               regions,
-        "account_manager":      managers,
-        "industry":             industry,
-        "employee_count":       emp_count,
-        "tier":                 tiers,
-        "status":               ["Active", "Inactive", "Active", "Active", "Inactive",
-                                  "Active", "Inactive", "Active", "Active", "Active",
-                                  "Active", "Inactive"],
-        "volume":               [5480, 2800, 5100, 7450, 1200, 3100, 820,  3800, 4350, 8400, 6600, 600 ],
-        "rate_pct":             [75.2, 68.4, 77.8, 65.1, 70.8, 74.3, 61.2, 69.5, 76.8, 64.2, 74.9, 59.8],
-        "score":                [80,   71,   85,   69,   75,   82,   64,   74,   83,   68,   79,   61  ],
-        "contract_value_usd":   [124000,48000,98000,210000,22000,75000,15000,52000,115000,380000,175000,12000],
-        "last_contact_date":    ["2025-05-28","2025-05-15","2025-05-29","2025-05-20","2025-05-10",
-                                  "2025-05-27","2025-05-08","2025-05-25","2025-05-30","2025-05-22",
-                                  "2025-05-26","2025-05-05"],
-    })
+    # 18 accounts will flip to Inactive in Period 2
+    inactive_idx = rng.choice(n, size=18, replace=False)
+    status_p1    = ["Active"] * n
+    status_p2    = ["Active"] * n
+    for i in inactive_idx:
+        status_p2[i] = "Inactive"
+
+    # Numeric cols: moderate changes between periods
+    volume_p1   = rng.integers(500, 9500, size=n)
+    rate_p1     = rng.uniform(58, 88, size=n).round(1)
+    score_p1    = rng.integers(55, 96, size=n)
+    nps_p1      = rng.integers(20, 72, size=n)
+
+    # Period 2: apply moderate deltas; inactive accounts drop more
+    volume_delta = rng.integers(-800, 900, size=n)
+    volume_delta[inactive_idx] = rng.integers(-2000, -800, size=len(inactive_idx))
+    rate_delta   = rng.uniform(-5, 4, size=n).round(1)
+    score_delta  = rng.integers(-6, 5, size=n)
+    nps_delta    = rng.integers(-12, 8, size=n)
+    nps_delta[inactive_idx] = rng.integers(-25, -10, size=len(inactive_idx))
+
+    volume_p2 = (volume_p1 + volume_delta).clip(0)
+    rate_p2   = (rate_p1   + rate_delta).clip(0, 100).round(1)
+    score_p2  = (score_p1  + score_delta).clip(0, 100)
+    nps_p2    = (nps_p1    + nps_delta).clip(-100, 100)
+
+    last_contact_p1 = [
+        str(date(2025, 4, 1) + timedelta(days=int(rng.integers(0, 29))))
+        for _ in range(n)
+    ]
+    last_contact_p2 = [
+        str(date(2025, 5, 1) + timedelta(days=int(rng.integers(0, 30))))
+        for _ in range(n)
+    ]
+    renewal_dates = [
+        str(date(2025, 6, 1) + timedelta(days=int(rng.integers(0, 180))))
+        for _ in range(n)
+    ]
+
+    record_ids = [f"ACC-{str(i).zfill(4)}" for i in range(1, n + 1)]
+
+    def build_mixed(statuses, volumes, rates, scores, nps_vals, last_contacts, report_date):
+        return pd.DataFrame({
+            "report_date":          [report_date] * n,
+            "record_id":            record_ids,
+            "account_name":         account_names,
+            "industry":             industries,
+            "region":               regions,
+            "country":              countries,
+            "account_manager":      managers,
+            "tier":                 tiers,
+            "support_tier":         support_tiers,
+            "employee_count":       emp_counts,
+            "contract_value_usd":   contracts,
+            "renewal_date":         renewal_dates,
+            "status":               statuses,
+            "volume":               volumes,
+            "rate_pct":             rates,
+            "score":                scores,
+            "nps_score":            nps_vals,
+            "last_contact_date":    last_contacts,
+            "open_support_tickets": rng.integers(0, 18, size=n),
+            "product_modules_used": rng.integers(1, 9,  size=n),
+            "logins_last_30_days":  rng.integers(0, 120, size=n),
+        })
+
+    p1 = build_mixed(status_p1, volume_p1, rate_p1, score_p1,
+                     nps_p1, last_contact_p1, "2025-04-30")
+    p2 = build_mixed(status_p2, volume_p2, rate_p2, score_p2,
+                     nps_p2, last_contact_p2, "2025-05-31")
 
     save(p1, "example4_mixed", "period1_april_2025.xlsx")
     save(p2, "example4_mixed", "period2_may_2025.xlsx")
@@ -302,4 +475,9 @@ if __name__ == "__main__":
     create_example2()
     create_example3()
     create_example4()
-    print("\nDone! All files saved to sample_data/")
+    print("\nDone. All files saved to sample_data/")
+    print("\nRow summary:")
+    print("  Example 1 — Product   : ~350 rows/file  (payment transaction log)")
+    print("  Example 2 — Marketing : ~550 rows/file  (session log)")
+    print("  Example 3 — Revenue   : ~480 rows/file  (payment transaction table)")
+    print("  Example 4 — Mixed     :  80  rows/file  (account records)")
