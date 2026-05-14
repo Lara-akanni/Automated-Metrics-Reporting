@@ -24,7 +24,7 @@ import pandas as pd
 from google import genai
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 
 # ---------------------------------------------------------------------------
