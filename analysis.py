@@ -170,14 +170,33 @@ def compute_deltas(df1: pd.DataFrame, df2: pd.DataFrame) -> list[dict]:
         period2_value_counts, period1_percentages, period2_percentages,
         period1_total, period2_total, all_categories
     """
+    # Columns to skip — dates, timestamps, IDs, and name identifiers
+    # are not meaningful metrics to compare across periods.
+    def _is_metadata_col(name: str, series: pd.Series) -> bool:
+        if pd.api.types.is_datetime64_any_dtype(series):
+            return True
+        n = name.lower()
+        if n == "id" or n.endswith("_id"):
+            return True
+        if "date" in n or "timestamp" in n:
+            return True
+        if n.endswith("_name") or n == "name":
+            return True
+        if "reference" in n or "invoice" in n:
+            return True
+        return False
+
     deltas = []
 
     for col in df1.columns:
         if col not in df2.columns:
-            continue  # should not happen after alignment, but guard anyway
+            continue
 
         series1 = df1[col].dropna()
         series2 = df2[col].dropna()
+
+        if _is_metadata_col(col, series1):
+            continue   # skip date/ID/name columns — not meaningful metrics
 
         if pd.api.types.is_numeric_dtype(df1[col]):
             # ----- Numeric column -----
@@ -246,54 +265,62 @@ def compute_deltas(df1: pd.DataFrame, df2: pd.DataFrame) -> list[dict]:
 # ---------------------------------------------------------------------------
 
 _SYSTEM_PROMPT = """\
-You are a data analyst reviewing changes between two business reporting periods.
+You are a data analyst surfacing factual changes between two business reporting periods.
+Your role is to report what the data and tools show — not to interpret or judge significance yourself.
 
-Period 1 is the BASELINE (earlier period).
-Period 2 is the CURRENT period (the one being evaluated).
-
-You have three tools available — use them to compute statistics before drawing conclusions:
-  • compute_percentage_change  — quantify how much a numeric metric changed
-  • detect_outliers            — check whether values in a series are statistical outliers
-  • run_significance_test      — test whether a numeric change is statistically significant
+You have three tools — always call them before writing any finding:
+  • compute_percentage_change  — use this for every numeric metric
+  • detect_outliers            — use this to check for anomalous values
+  • run_significance_test      — use this to test whether a change is statistically meaningful
 
 INSTRUCTIONS
-1. For EVERY numeric column:
-   a. Call compute_percentage_change with the appropriate aggregate values
-      (use period1_sum / period2_sum for volume/revenue/amount metrics;
-       use period1_mean / period2_mean for rate/score metrics).
-   b. Call detect_outliers on the combined period1_values list to flag anomalies.
-   c. Call run_significance_test with period1_values and period2_values to assess
-      whether the difference is statistically meaningful.
 
-2. For EVERY categorical column:
-   - Compare the percentage distributions across categories between periods.
-   - Note any category that gained or lost more than 5 percentage points.
-   - Set is_outlier and is_significant based on the magnitude of the shift.
+1. For EVERY numeric column call all three tools:
+   a. compute_percentage_change — use period1_sum/period2_sum for volume/amount/revenue metrics;
+      use period1_mean/period2_mean for rate/score metrics.
+   b. detect_outliers — pass the period1_values list.
+   c. run_significance_test — pass period1_values and period2_values.
 
-3. Return ALL detected changes — do NOT rank, prioritise, or omit any finding.
-   Every column with a measurable change must appear in the output.
+2. For categorical columns — compare the percentage distributions across categories.
+   Only include a categorical finding if a category shifted by more than 5 percentage points.
 
-4. Your FINAL response must be ONLY a valid JSON array — no markdown fences, no
-   commentary, no text before or after the array.
+3. Set flags ONLY based on tool results:
+   - is_outlier = true ONLY if detect_outliers returned has_outliers: true
+   - is_significant = true ONLY if run_significance_test returned is_significant: true
+   - Do NOT set both flags to true for every finding — most findings will have one or neither.
+   - Do NOT add your own judgment about whether something is significant.
 
-OUTPUT SCHEMA  (one object per finding)
+4. Express ALL numeric changes as percentages using the % symbol.
+   Example: "increased by 12.4%" not "increased by 3 units".
+   Use the percentage_change value returned by compute_percentage_change.
+
+5. Explanations must reference the actual period names provided (not "Period 1" / "Period 2").
+   Use the file/period names given in the data context below.
+
+6. Keep explanations factual — state what changed and by how much.
+   Do NOT say "this is a significant shift" or make recommendations.
+   Leave interpretation to the analyst.
+
+7. Your FINAL response must be ONLY a valid JSON array — no markdown, no commentary.
+
+OUTPUT SCHEMA
 [
   {
-    "metric_name":     "human-readable column/metric name",
-    "previous_value":  <number or string>,
-    "current_value":   <number or string>,
-    "delta":           <number or descriptive string>,
+    "metric_name":     "human-readable metric name",
+    "previous_value":  "value with % symbol if numeric (e.g. 92.1%)",
+    "current_value":   "value with % symbol if numeric (e.g. 85.1%)",
+    "delta":           "change expressed as percentage with % symbol (e.g. -7.0%)",
     "direction":       "increase" | "decrease" | "no change" | "changed",
     "is_outlier":      true | false,
     "is_significant":  true | false,
-    "explanation":     "Specific, business-relevant sentence a stakeholder can act on"
+    "explanation":     "Factual sentence using actual period names, stating what changed and by how much."
   },
   ...
 ]
 """
 
 
-def call_llm(deltas: list[dict]) -> list[dict]:
+def call_llm(deltas: list[dict], period1_name: str = "Period 1", period2_name: str = "Period 2") -> list[dict]:
     """
     Send delta data to Gemini with tool use enabled.
 
@@ -319,10 +346,13 @@ def call_llm(deltas: list[dict]) -> list[dict]:
     delta_json = json.dumps(deltas, indent=2)
 
     user_message = (
-        "Below is the aggregated delta data comparing Period 1 (baseline) "
-        "to Period 2 (current).\n\n"
+        f"You are comparing two reporting periods:\n"
+        f"  • Baseline period : {period1_name}\n"
+        f"  • Current period  : {period2_name}\n\n"
+        "Use these exact names in your explanations — never write 'Period 1' or 'Period 2'.\n\n"
+        "Below is the aggregated delta data:\n\n"
         f"```json\n{delta_json}\n```\n\n"
-        "Please use the available tools to compute statistics for every metric, "
+        "Use the available tools to compute statistics for every metric, "
         "then return the JSON findings array as instructed."
     )
 
@@ -440,14 +470,21 @@ def call_llm(deltas: list[dict]) -> list[dict]:
 # Main entry point
 # ---------------------------------------------------------------------------
 
-def run_analysis(file_period1, file_period2) -> list[dict]:
+def run_analysis(
+    file_period1,
+    file_period2,
+    period1_name: str = "Period 1",
+    period2_name: str = "Period 2",
+) -> list[dict]:
     """
     Full pipeline: parse → align → delta → LLM → findings.
 
     Parameters
     ----------
-    file_period1 : file-like object  — uploaded Period 1 Excel file
-    file_period2 : file-like object  — uploaded Period 2 Excel file
+    file_period1  : file-like object  — uploaded Period 1 Excel file
+    file_period2  : file-like object  — uploaded Period 2 Excel file
+    period1_name  : str — human-readable label for Period 1 (e.g. filename)
+    period2_name  : str — human-readable label for Period 2 (e.g. filename)
 
     Returns
     -------
@@ -463,5 +500,5 @@ def run_analysis(file_period1, file_period2) -> list[dict]:
     if not deltas:
         return []
 
-    findings = call_llm(deltas)
+    findings = call_llm(deltas, period1_name=period1_name, period2_name=period2_name)
     return findings

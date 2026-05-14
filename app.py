@@ -114,9 +114,17 @@ if st.button("▶ Run Analysis", disabled=not both_uploaded, type="primary"):
     st.session_state.findings = None
     st.session_state.error_message = None
 
+    # Strip extension for cleaner period labels in explanations
+    p1_name = os.path.splitext(file_period1.name)[0] if file_period1.name else "Period 1"
+    p2_name = os.path.splitext(file_period2.name)[0] if file_period2.name else "Period 2"
+
     with st.spinner("Analysing files and generating insights — this may take a moment..."):
         try:
-            st.session_state.findings = run_analysis(file_period1, file_period2)
+            st.session_state.findings = run_analysis(
+                file_period1, file_period2,
+                period1_name=p1_name,
+                period2_name=p2_name,
+            )
         except ValueError as e:
             st.session_state.error_message = str(e)
         except Exception as e:

@@ -85,8 +85,8 @@ def create_example1():
     p2 = make_product_file(n2, date(2025, 5, 5),  date(2025, 5, 11),
                            success_rate=0.851, avg_csat=3.7, id_start=n1 + 1)
 
-    save(p1, "example1_product_metrics", "period1_week_apr28.xlsx")
-    save(p2, "example1_product_metrics", "period2_week_may05.xlsx")
+    save(p1, "example1_product_metrics", "Product_week_apr28.xlsx")
+    save(p2, "example1_product_metrics", "Product_week_may05.xlsx")
 
 
 # ===========================================================================
@@ -131,8 +131,8 @@ def create_example2():
     p2 = make_marketing_file(n2, date(2025, 5, 5),  date(2025, 5, 11),
                              signup_rate=0.06, conv_rate=0.04, id_start=n1 + 1)
 
-    save(p1, "example2_marketing_metrics", "period1_week_apr28.xlsx")
-    save(p2, "example2_marketing_metrics", "period2_week_may05.xlsx")
+    save(p1, "example2_marketing_metrics", "Marketing_week_apr28.xlsx")
+    save(p2, "example2_marketing_metrics", "Marketing_week_may05.xlsx")
 
 
 # ===========================================================================
@@ -190,8 +190,8 @@ def create_example3():
     p1 = make_revenue_file(config["p1"], date(2025, 4, 1), date(2025, 4, 30), id_start=1)
     p2 = make_revenue_file(config["p2"], date(2025, 5, 1), date(2025, 5, 31), id_start=100)
 
-    save(p1, "example3_revenue_mom", "period1_april_2025.xlsx")
-    save(p2, "example3_revenue_mom", "period2_may_2025.xlsx")
+    save(p1, "example3_revenue_mom", "Revenue_april_2025.xlsx")
+    save(p2, "example3_revenue_mom", "Revenue_may_2025.xlsx")
 
 
 # ===========================================================================
@@ -260,8 +260,8 @@ def create_example4():
     p1 = build_mixed(status_p1, volume_p1, rate_p1, score_p1, nps_p1)
     p2 = build_mixed(status_p2, volume_p2, rate_p2, score_p2, nps_p2)
 
-    save(p1, "example4_mixed", "period1_april_2025.xlsx")
-    save(p2, "example4_mixed", "period2_may_2025.xlsx")
+    save(p1, "example4_mixed", "Mixed_april_2025.xlsx")
+    save(p2, "example4_mixed", "Mixed_may_2025.xlsx")
 
 
 # ===========================================================================
