@@ -83,28 +83,21 @@ Each entry covers one file pair, what the app returned, and a manual score again
 **File pair:** `sample_data/example2_marketing_metrics/`
 **Engineered changes:** Session volume ↑ (traffic spike, 50 → 65 rows) | Signup rate ↓ (12% → 6%) | Conversion rate ↓ (8% → 4%)
 
+**Date:** 2025-05-14
+
 ### App Findings
-*(Paste or summarise what the app returned here)*
+*(To be completed — findings noted, full log pending)*
 
-| # | Metric Name | Period 1 | Period 2 | Direction | Outlier? | Significant? |
-|---|---|---|---|---|---|---|
-| 1 | | | | | | |
-| 2 | | | | | | |
-| 3 | | | | | | |
+### PDF Report Issues Identified
+1. **Content cut at edges** — table overflows page width; margins too narrow
+2. **Incomplete content** — findings cut off; page too small for all rows
+3. **No page numbers** — PDF should be numbered
+4. **Insight not domain-aware** — explanations are generic rather than framed in marketing context (e.g. should reference traffic, signups, conversion in marketing terms)
 
-**Explanations (copy from app):**
->
-
-### Scoring
-
-| Dimension | Score (1–3) | Notes |
-|---|---|---|
-| Change Detection | | |
-| Explanation Quality | | |
-| **Total** | **/6** | |
-| **Pass (5+)?** | | |
+*All issues above to be fixed in `report.py` and `report.md` before scoring.*
 
 ### Observations
+PDF layout needs fixing before this run can be properly scored. App findings and scoring to be completed after PDF fixes are applied.
 
 ---
 
