@@ -42,24 +42,24 @@ A score of **5 or higher** indicates strong performance.
 
 ## Scoring Sheet (per test case)
 
-| Dimension | Score (1–3) | Notes |
-|---|---|---|
-| Change Detection | | |
-| Explanation Quality | | |
-| **Total** | **/6** | |
-| **Pass (5+)?** | Yes / No | |
+| Dimension | App Score (1–3) | Baseline Score (1–3) | Notes |
+|---|---|---|---|
+| Change Detection | | | |
+| Explanation Quality | | | |
+| **Total** | **/6** | **/6** | |
+| **Pass (5+)?** | Yes / No | Yes / No | |
 
 ---
 
 ## Test Case Index
 
-| # | Case Name | Domain | Engineered Changes | Date Run | Total Score | Pass? |
-|---|---|---|---|---|---|---|
-| 1 | `product_metrics_wk` | Product | Success rate ↓, satisfaction ↓ | | | |
-| 2 | `marketing_metrics_wk` | Marketing | Traffic ↑, conversion ↓ | | | |
-| 3 | `revenue_mom` | Revenue | One product line significant ↓ | | | |
-| 4 | `mixed_numeric_categorical` | Mixed | Numeric changes + status → Inactive | | | |
-| 5 | *(add more as created)* | | | | | |
+| # | Case Name | Domain | Engineered Changes | Date Run | App Score | Baseline Score | App Pass? |
+|---|---|---|---|---|---|---|---|
+| 1 | `product_metrics_wk` | Product | Success rate ↓, satisfaction ↓ | | | | |
+| 2 | `marketing_metrics_wk` | Marketing | Traffic ↑, conversion ↓ | | | | |
+| 3 | `revenue_mom` | Revenue | One product line significant ↓ | | | | |
+| 4 | `mixed_numeric_categorical` | Mixed | Numeric changes + status → Inactive | | | | |
+| 5 | *(add more as created)* | | | | | | |
 
 ---
 
@@ -80,10 +80,10 @@ analyses the same file pair and compares their findings to the app's output.
 
 > **[TO BE COMPLETED AFTER TESTING]**
 
-| Metric | Value |
-|---|---|
-| Total test cases run | |
-| Average Change Detection score | / 3 |
-| Average Explanation Quality score | / 3 |
-| Average total score | / 6 |
-| Cases scoring 5+ (pass rate) | / |
+| Metric | App | Baseline |
+|---|---|---|
+| Total test cases run | | |
+| Average Change Detection score | / 3 | / 3 |
+| Average Explanation Quality score | / 3 | / 3 |
+| Average total score | / 6 | / 6 |
+| Cases scoring 5+ (pass rate) | / | / |

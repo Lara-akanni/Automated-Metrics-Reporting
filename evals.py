@@ -19,6 +19,7 @@ import json
 import argparse
 import pandas as pd
 from analysis import run_analysis
+from baseline import run_baseline
 
 
 # ---------------------------------------------------------------------------
@@ -109,20 +110,26 @@ def run_test_case(case_path: str) -> dict:
     Returns
     -------
     dict with keys:
-        case_name               : str
-        change_detection_score  : int
-        explanation_score       : int | None (None = needs manual review)
-        total_score             : int | None
-        passed                  : bool | None (True if total >= STRONG_PERFORMANCE)
-        app_findings            : list[dict]
-        ground_truth            : list[dict]
+        case_name                        : str
+        app_change_detection_score       : int
+        app_explanation_score            : int | None
+        app_total_score                  : int | None
+        app_passed                       : bool | None
+        baseline_change_detection_score  : int
+        baseline_explanation_score       : int | None
+        baseline_total_score             : int | None
+        baseline_passed                  : bool | None
+        app_findings                     : list[dict]
+        baseline_findings                : list[dict]
+        ground_truth                     : list[dict]
     """
     case_name = os.path.basename(case_path)
 
     # TODO: load period1.xlsx, period2.xlsx, and ground_truth.json from case_path
-    # Call run_analysis(file1, file2)
-    # Score change_detection and explanation_quality
-    # Return results dict
+    # Call run_analysis(file1, file2)      → app_findings
+    # Call run_baseline(file1, file2)      → baseline_findings
+    # Score both against ground_truth on both dimensions
+    # Return results dict with app_ and baseline_ prefixed score keys
     pass
 
 
@@ -142,12 +149,14 @@ def run_eval_suite(cases_dir: str = "eval_cases") -> pd.DataFrame:
     Returns
     -------
     pd.DataFrame with one row per test case and columns:
-        case_name, change_detection, explanation, total, passed
+        case_name,
+        app_change_detection, app_explanation, app_total, app_passed,
+        baseline_change_detection, baseline_explanation, baseline_total, baseline_passed
     """
     # TODO: discover all subdirectories in cases_dir
     # Run run_test_case() for each
-    # Aggregate into a DataFrame
-    # Print summary stats (mean scores, pass rate)
+    # Aggregate into a DataFrame with app_ and baseline_ columns
+    # Print side-by-side summary stats for both approaches
     pass
 
 

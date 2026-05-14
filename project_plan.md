@@ -46,15 +46,14 @@ Three specific parts of this workflow benefit from language models:
 
 > **Note:** The app does not rank or prioritise findings by business importance. Ranking requires domain context — such as which metrics matter most to a given stakeholder — that the LLM cannot reliably determine. All detected changes are surfaced and explained; prioritisation is left to the analyst.
 
-### Why a Simpler Non-AI Tool Would Not Be Enough
-A spreadsheet template or basic Python script can compute deltas and flag outliers, but it cannot:
+### Why a Prompt-Only Approach Is Not Enough
+A prompt-only LLM call — sending the raw data to Gemini with no tool use and no structured output enforcement — can generate some narrative text, but it cannot:
 
-- Rank findings intelligently by business impact rather than just magnitude
-- Write a narrative explanation that communicates what a finding means and why it matters
-- Handle varying column structures across different datasets without manual configuration
-- Adapt its output to the context of the data it is analyzing
+- Compute percentage changes, outlier flags, or statistical significance reliably (the model guesses rather than calculates)
+- Return findings in a consistent, machine-readable format that can be assembled into a PDF
+- Guarantee the same structure across different datasets and column types
 
-The combination of structured reasoning, narrative generation, and tool-assisted computation is what makes a language model the right fit for this workflow.
+The addition of tool use and structured outputs is what makes the app's analysis deterministic, auditable, and consistent. This is directly tested by comparing the app against a prompt-only baseline on the same test cases.
 
 ---
 
@@ -80,7 +79,9 @@ The LLM is prompted to return all findings in strict JSON format rather than fre
 Rather than asking the LLM to compute statistical tests or detect outliers itself (which would be unreliable), the app gives the LLM access to backend functions it can call: `compute_percentage_change`, `detect_outliers` (using interquartile range), and `run_significance_test`. The LLM calls these functions during its analysis step and uses the results to inform its ranking and narrative. This keeps the math deterministic and auditable while the LLM focuses on reasoning and explanation.
 
 ### Simpler Baseline for Comparison
-The simpler alternative being compared against is manual Excel-based analysis. The analyst opens both files, manually computes deltas using formulas, applies conditional formatting to spot outliers visually, decides on finding priority based on personal judgment, and writes the narrative explanation in a separate document. This is the current real-world workflow the app is designed to replace. Comparing the app's output against this manual baseline will show whether the app correctly identifies and prioritizes the same findings a skilled analyst would catch.
+The baseline being compared against is a **prompt-only approach** — the same Gemini model, the same input data, but with no tool use and no structured output enforcement. The baseline sends both datasets directly to Gemini with a plain prompt asking it to identify and explain what changed. It does not call `compute_percentage_change`, `detect_outliers`, or `run_significance_test`. It does not enforce a JSON response schema.
+
+This baseline is implemented in `baseline.py` and is run on every synthetic test case alongside the main app. Both are scored against the same `ground_truth.json` using the same rubric, making the comparison objective and reproducible. The difference in scores shows the direct value that tool use and structured outputs add to the analysis.
 
 ### What the App Looks Like
 The analyst opens a simple web app built with Streamlit or equivalent. They are presented with two file upload areas labeled "Period 1" and "Period 2." After uploading both Excel files, they click a button to run the analysis. The app shows a loading state while it processes the files, runs the comparison, and calls the LLM. When ready, the app displays a preview of the top findings ranked by impact with a brief explanation for each. The analyst can then download the full PDF report, which is formatted and ready to share with stakeholders. No configuration is required. The app detects column types automatically and handles varying structures across different datasets.
@@ -114,7 +115,7 @@ The test file pairs will span multiple real-world domains:
 In addition to the synthetic evaluation set, 2 to 3 manual spot checks will be run where the analyst analyzes the same file pair independently and compares their findings to the app's output. This provides qualitative insight into where the app excels or struggles in ways the rubric alone might not capture.
 
 ### Baseline Comparison
-For each synthetic test case, the app's output will be compared against the known ground truth (the engineered changes). For the manual spot checks, the app's output will be compared to the analyst's own independent findings. The goal is to demonstrate that the app catches the same changes a skilled analyst would catch, ranks them correctly, and communicates them clearly.
+For each synthetic test case, both the app and the prompt-only baseline are run on the same file pair and scored against the same `ground_truth.json`. This produces a side-by-side score comparison across both rubric dimensions. The goal is to demonstrate that the app — with tool use and structured outputs — catches more changes and produces clearer explanations than the prompt-only approach alone.
 
 ---
 
@@ -192,4 +193,4 @@ The app interface will be functional enough to upload two files, run the analysi
 By Week 6, the evaluation rubric will be fully defined (three dimensions, scored 1 to 3, out of 9 points total). At least 3 to 4 synthetic test cases will have been run through the app and scored against ground truth. Initial results will be available showing where the app performs well and where it struggles.
 
 ### Baseline Comparison
-At least 1 to 2 manual spot checks will have been completed where the analyst analyzed the same file pair independently and compared their findings to the app's output. This will serve as the first real-world comparison against the manual baseline and will inform refinements before the final submission.
+The prompt-only baseline (`baseline.py`) will have been run on the same 3 to 4 synthetic test cases and scored against the same ground truth. Initial side-by-side scores comparing the baseline against the app will be available, showing where tool use and structured outputs make a measurable difference.
