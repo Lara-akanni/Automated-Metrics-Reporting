@@ -18,10 +18,10 @@ Derived automatically from the uploaded file name:
 - File contains "week" → "Weekly" | File contains a month name → "Monthly"
 
 ### Period Labels
-Derived from the date range in the data, not the file name:
-- "Week of 28 Apr – 4 May 2025" (from min/max date in Period 1 file)
-- "Week of 5 May – 11 May 2025" (from min/max date in Period 2 file)
-- If no date column is present, fall back to: "Previous Period" / "Current Period"
+Derived from the file name:
+- `Product_week_apr28` → "Week of 28 Apr 2025"
+- `Revenue_april_2025` → "April 2025"
+- Falls back to the raw file name if no pattern matches
 
 ### Impact Level (colour coding — no ranking)
 Derived from the statistical flags on each finding:
@@ -29,16 +29,32 @@ Derived from the statistical flags on each finding:
 - 🟡 **Medium** — `is_outlier: true` but not significant (unusual value, watch closely)
 - 🟢 **Low** — neither flag set (change detected but within normal variation)
 
-### Layout (1 page, A4)
-1. Header bar (dark blue) — report title + generated date
+### Layout (A4, multi-page if needed)
+1. Header bar (dark blue `#1A237E`) — report title + generated date (right-aligned)
 2. Period strip — previous period label on the left, current period on the right
-3. Summary row — total findings | significant | outliers
+3. Summary row (`#E8EAF6`) — total findings | significant | outliers
 4. Findings table — one row per finding, compact
-5. Footer — disclaimer note
+5. Impact key legend — colour key below the table
+6. Footer — disclaimer note
+7. Page numbers — bottom right of every page
 
 ### Findings Table Columns
-| Metric | Previous Period | Current Period | Change | Impact | Insight |
-Each row is colour-coded on the left edge by impact level (red / amber / green strip).
+| Metric | Previous | Current | Change | Impact | Insight |
+
+Row background colour-coded by impact level (no strip column):
+- 🔴 High row: light red `#FFEBEE`
+- 🟡 Medium row: light amber `#FFF3E0`
+- 🟢 Low row: light green `#F1F8E9`
+
+Column widths (A4, 1.5 cm margins, ~18 cm usable):
+- Metric: 3.5 cm | Previous: 2.2 cm | Current: 2.2 cm | Change: 1.8 cm | Impact: 1.6 cm | Insight: remainder
+
+### Domain-Aware Insights
+The LLM writes explanations using language appropriate to the report domain, derived from the file name:
+- `Product_*` → product terms (payment success rate, response time, CSAT, transaction volume)
+- `Marketing_*` → marketing terms (session volume, signup rate, conversion rate, traffic)
+- `Revenue_*` → revenue terms (product line revenue, sales volume, transaction amounts)
+- `Mixed_*` → account terms (account status, NPS score, activity levels)
 
 ---
 
@@ -64,38 +80,26 @@ Each row is colour-coded on the left edge by impact level (red / amber / green s
 
   FINDINGS
 
-  ┌──────────────────┬────────────┬────────────┬──────────┬────────┐
-  │ Metric           │ Previous   │ Current    │ Change   │ Impact │
-  ├──────────────────┼────────────┼────────────┼──────────┼────────┤
-█ │ Payment Status   │ 92.1%      │ 85.1%      │ -7.6%    │  HIGH  │
-  │ (Success Rate)   │ success    │ success    │          │        │
-  │                                                                 │
-  │ Insight: The payment success rate fell by 7.6% from the week   │
-  │ of 28 Apr to the week of 5 May. Failed transactions rose from  │
-  │ 7.9% to 14.9% of total volume.                                 │
-  ├──────────────────┼────────────┼────────────┼──────────┼────────┤
-█ │ CSAT Score       │ 4.3 / 5    │ 3.7 / 5    │ -14.0%   │  HIGH  │
-  │                                                                 │
-  │ Insight: Average customer satisfaction dropped by 14.0% from   │
-  │ the week of 28 Apr to the week of 5 May, from 4.3 to 3.7       │
-  │ out of 5.                                                       │
-  ├──────────────────┼────────────┼────────────┼──────────┼────────┤
-▲ │ Response Time    │ 342 ms     │ 368 ms     │ +7.6%    │ MEDIUM │
-  │                                                                 │
-  │ Insight: Average response time increased by 7.6% between the   │
-  │ two periods. An outlier value was detected in the current       │
-  │ period data.                                                    │
-  ├──────────────────┼────────────┼────────────┼──────────┼────────┤
-● │ Amount (USD)     │ $412.30    │ $438.70    │ +6.4%    │  LOW   │
-  │                                                                 │
-  │ Insight: Average transaction amount increased by 6.4% from     │
-  │ the week of 28 Apr to the week of 5 May. Change is within      │
-  │ normal variation.                                               │
-  └──────────────────┴────────────┴────────────┴──────────┴────────┘
+  ┌──────────────────┬──────────┬──────────┬─────────┬────────┬──────────────────────────────────┐
+  │ Metric           │ Previous │ Current  │ Change  │ Impact │ Insight                          │
+  ├──────────────────┼──────────┼──────────┼─────────┼────────┼──────────────────────────────────┤
+  │ Payment Status   │ 92.1%    │ 85.1%    │ -7.6%   │  HIGH  │ The payment success rate fell    │  ← light red row
+  │ (Success Rate)   │          │          │         │        │ by 7.6% from the week of 28 Apr  │
+  │                  │          │          │         │        │ to the week of 5 May.            │
+  ├──────────────────┼──────────┼──────────┼─────────┼────────┼──────────────────────────────────┤
+  │ CSAT Score       │ 4.3/5    │ 3.7/5    │ -14.0%  │  HIGH  │ Customer satisfaction dropped    │  ← light red row
+  │                  │          │          │         │        │ by 14.0% from 4.3 to 3.7/5.     │
+  ├──────────────────┼──────────┼──────────┼─────────┼────────┼──────────────────────────────────┤
+  │ Response Time    │ 342 ms   │ 368 ms   │ +7.6%   │ MEDIUM │ Average response time increased  │  ← light amber row
+  │                  │          │          │         │        │ by 7.6%. An outlier was detected │
+  │                  │          │          │         │        │ in the current period.           │
+  ├──────────────────┼──────────┼──────────┼─────────┼────────┼──────────────────────────────────┤
+  │ Amount (USD)     │ $412.30  │ $438.70  │ +6.4%   │  LOW   │ Average transaction amount       │  ← light green row
+  │                  │          │          │         │        │ increased by 6.4%. Change is     │
+  │                  │          │          │         │        │ within normal variation.         │
+  └──────────────────┴──────────┴──────────┴─────────┴────────┴──────────────────────────────────┘
 
-  Impact key:  █ High (statistically significant)
-               ▲ Medium (outlier detected)
-               ● Low (within normal variation)
+  ■ HIGH — statistically significant change    ■ MEDIUM — outlier detected    ■ LOW — within normal variation
 
   ─────────────────────────────────────────────────────────────────────
   This report was generated automatically by the Automated Metrics
@@ -107,12 +111,9 @@ Each row is colour-coded on the left edge by impact level (red / amber / green s
 
 ---
 
-## Notes / Changes to Make Before Building PDF
+## Change Log
 
-Use this section to record any adjustments you want before `report.py` is implemented.
-
-- [ ] Confirm 1-page layout fits all findings comfortably (may need compact font if >6 findings)
-- [ ] Confirm header bar colour (currently dark blue `#1A237E`)
-- [ ] Confirm impact colour strip colours (red / amber / green)
-- [ ] Confirm footer disclaimer wording
-- [ ] Any other changes?
+| Date | Change |
+|---|---|
+| 2025-05-14 | Initial design spec — colour strip column, 1-page constraint |
+| 2025-05-14 | Rewritten after Run 2 PDF issues: removed colour strip column, row background colours instead, 1.5 cm margins, multi-page allowed, page numbers added, domain-aware insights |

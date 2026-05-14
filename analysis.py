@@ -297,7 +297,14 @@ INSTRUCTIONS
 5. Explanations must reference the actual period names provided (not "Period 1" / "Period 2").
    Use the file/period names given in the data context below.
 
-6. Keep explanations factual — state what changed and by how much.
+6. Write explanations using domain-appropriate language based on the report domain provided:
+   - Product domain: use terms like "payment success rate", "response time", "customer satisfaction", "transaction volume"
+   - Marketing domain: use terms like "session volume", "signup rate", "conversion rate", "traffic", "click-through", "campaign performance"
+   - Revenue domain: use terms like "revenue", "product line", "sales volume", "transaction amounts", "earnings"
+   - Mixed domain: use terms like "account status", "volume", "NPS score", "activity levels"
+   Frame each finding in a way a business stakeholder in that domain would immediately understand.
+
+7. Keep explanations factual — state what changed and by how much.
    Do NOT say "this is a significant shift" or make recommendations.
    Leave interpretation to the analyst.
 
@@ -345,11 +352,26 @@ def call_llm(deltas: list[dict], period1_name: str = "Period 1", period2_name: s
 
     delta_json = json.dumps(deltas, indent=2)
 
+    # Derive domain from the period 1 file name for domain-aware explanations
+    p1_lower = period1_name.lower()
+    if p1_lower.startswith("product"):
+        domain = "Product"
+    elif p1_lower.startswith("marketing"):
+        domain = "Marketing"
+    elif p1_lower.startswith("revenue"):
+        domain = "Revenue"
+    elif p1_lower.startswith("mixed"):
+        domain = "Mixed"
+    else:
+        domain = "Business"
+
     user_message = (
         f"You are comparing two reporting periods:\n"
         f"  • Baseline period : {period1_name}\n"
-        f"  • Current period  : {period2_name}\n\n"
-        "Use these exact names in your explanations — never write 'Period 1' or 'Period 2'.\n\n"
+        f"  • Current period  : {period2_name}\n"
+        f"  • Report domain   : {domain}\n\n"
+        "Use these exact names in your explanations — never write 'Period 1' or 'Period 2'.\n"
+        f"Write all explanations using {domain.lower()} domain language as instructed.\n\n"
         "Below is the aggregated delta data:\n\n"
         f"```json\n{delta_json}\n```\n\n"
         "Use the available tools to compute statistics for every metric, "
