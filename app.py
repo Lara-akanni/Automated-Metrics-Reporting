@@ -81,7 +81,7 @@ if "error_message" not in st.session_state:
 col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("Period 1 — Baseline")
+    st.subheader("Period 1 — Previous")
     file_period1 = st.file_uploader(
         "Upload Period 1 Excel file",
         type=["xlsx", "xls"],
