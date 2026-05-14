@@ -58,7 +58,7 @@ The key packages used by this project are:
 | `streamlit` | Web app interface |
 | `pandas` | Excel file parsing and delta computation |
 | `openpyxl` | Reading `.xlsx` files |
-| `google-generativeai` | Gemini API client (LLM + tool use) |
+| `google-genai` | Gemini API client (LLM + tool use) |
 | `reportlab` | PDF report generation |
 | `scipy` | Statistical significance testing |
 
@@ -66,21 +66,19 @@ The key packages used by this project are:
 
 ### 4. Set Your API Key
 
-Create a `.env` file in the project root (this file is git-ignored and should never be committed):
+This app requires a **Google Gemini API key**. Get one for free at [Google AI Studio](https://aistudio.google.com/app/apikey).
 
+**Step 1 — Copy the example file:**
 ```bash
-GEMINI_API_KEY=your_api_key_here
+cp .env.example .env
 ```
 
-Or export it directly in your terminal session:
-
-```bash
-# Mac/Linux
-export GEMINI_API_KEY=your_api_key_here
-
-# Windows
-set GEMINI_API_KEY=your_api_key_here
+**Step 2 — Open `.env` and replace the placeholder with your real key:**
 ```
+GEMINI_API_KEY=your_actual_key_here
+```
+
+> ⚠️ `.env` is listed in `.gitignore` and will never be committed to the repository. Never share or publish this file — it contains your private API key. The `.env.example` file shows the required format but does not contain a real key.
 
 ---
 
@@ -96,41 +94,50 @@ The app will open automatically in your browser at `http://localhost:8501`.
 
 ### 6. Try It with the Sample Files
 
-Two sample Excel files are included in the `sample_data/` folder so you can run the app immediately without preparing your own data:
+Sample Excel file pairs are included in the `sample_data/` folder so you can run the app immediately without preparing your own data:
 
 ```
 sample_data/
-  sample_period1.xlsx   ← baseline period (e.g. last week)
-  sample_period2.xlsx   ← comparison period (e.g. this week)
+  example1_product_metrics/
+    period1_week_apr28.xlsx   ← baseline period
+    period2_week_may05.xlsx   ← comparison period
+  example2_marketing_metrics/
+  example3_revenue_mom/
+  example4_mixed/
 ```
 
-**Steps:**
-1. In the app, click **Browse files** under **Period 1** and upload `sample_period1.xlsx`
-2. Click **Browse files** under **Period 2** and upload `sample_period2.xlsx`
-3. Click **Run Analysis**
-4. Review the ranked findings displayed on screen
-5. Click **Download PDF Report** to save the output
+**Steps (using Example 1 — Product Metrics):**
+1. In the app, click **Browse files** under **Period 1** and upload `period1_week_apr28.xlsx`
+2. Click **Browse files** under **Period 2** and upload `period2_week_may05.xlsx`
+3. Click **▶ Run Analysis**
+4. Review the findings displayed on screen — each finding shows Period 1 vs Period 2 values, the change direction, statistical significance, and a plain-English explanation
 
-The sample files contain product metrics with deliberate engineered changes (a success rate drop and a satisfaction score dip) so you can verify the app is detecting and ranking findings correctly.
+Example 1 contains product payment data with a deliberate success rate drop and satisfaction score dip — upload both files to verify the app detects them correctly.
 
 ---
 
 ### Project Structure
 
 ```
-genai_project/
+Automated-Metrics-Reporting/
 ├── app.py                  # Streamlit app entry point
+├── analysis.py             # Parse → align → delta → LLM tool loop
+├── baseline.py             # Prompt-only baseline (no tools) for comparison
+├── tools.py                # Backend math functions called by the LLM
+├── report.py               # PDF generation from structured findings
+├── evals.py                # Automated scoring against ground truth
 ├── requirements.txt        # Python dependencies
-├── .env.example            # Template for API key setup (copy to .env)
-├── tools.py                # Backend functions called by the LLM
-│   ├── compute_percentage_change()
-│   ├── detect_outliers()
-│   └── run_significance_test()
-├── analysis.py             # Column alignment, delta computation, LLM orchestration
-├── report.py               # PDF generation from structured JSON findings
-└── sample_data/
-    ├── sample_period1.xlsx
-    └── sample_period2.xlsx
+├── .env.example            # API key template — copy to .env and fill in
+├── eval_set.md             # Human-readable evaluation test cases
+├── eval_rubric.md          # Scoring rubric (2 dimensions, max 6 points)
+├── project_plan.md         # Full project plan and design decisions
+├── create_sample_data.py   # Script to regenerate synthetic Excel test files
+├── eval_cases/             # Ground truth JSON files for automated eval
+└── sample_data/            # Synthetic Excel file pairs for testing
+    ├── example1_product_metrics/
+    ├── example2_marketing_metrics/
+    ├── example3_revenue_mom/
+    └── example4_mixed/
 ```
 
 ---
