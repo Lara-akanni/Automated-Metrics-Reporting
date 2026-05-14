@@ -184,3 +184,25 @@ Nothing.
 
 **Why this is a likely failure point:**
 LLMs have a tendency to find patterns even when none exist. Without tool use, a prompt-only model would likely narrate small random differences as meaningful trends. This case directly tests whether the significance test acts as a gatekeeper — and whether the model respects the tool output when it says `is_significant: false`. It also serves as a direct comparison point for the baseline: the baseline is expected to fail this case (by surfacing false positives), while the main app should pass it.
+
+---
+
+## Eval 9 — Likely Failure Case: Inconsistent Categorical Formatting
+
+**Type:** Likely failure / requires human review
+
+**Input:**
+Two Excel files where a categorical column contains the same values but with inconsistent casing across periods — for example, Period 1 has `"Active"` and `"Inactive"`, while Period 2 has `"active"` and `"INACTIVE"`.
+No real status changes were engineered — the same accounts have the same status in both periods.
+
+**What was engineered:**
+Nothing — only formatting inconsistency.
+
+**What a good output should do:**
+- Normalise categorical values to lowercase before comparison so that `"Active"`, `"active"`, and `"ACTIVE"` are treated as the same value
+- Not flag the formatting difference as a real categorical change
+- Return no status-related findings (or note that values appear equivalent after normalisation)
+- Demonstrate that the app does not produce false positives from formatting noise
+
+**Why this is a likely failure point:**
+A case-sensitive comparison would treat `"Active"` and `"active"` as different categories and report a shift in the status distribution — even though nothing actually changed. This would produce misleading findings and erode analyst trust in the output. The app's `compute_deltas()` function normalises categorical values to lowercase before comparing, but if that step is skipped or incomplete, this case will produce false positives. The baseline is especially likely to fail here since it has no normalisation step and the model receives raw summary statistics where the formatting difference may appear as a real distribution shift.

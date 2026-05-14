@@ -94,7 +94,7 @@ The analyst opens a simple web app built with Streamlit or equivalent. They are 
 The app successfully identifies all major changes between the two datasets, correctly flags real outliers and statistically significant changes, and generates explanations that are clear enough for a stakeholder to understand without needing to see the raw data. The report should read like something a skilled analyst would write, not like an automated summary. Prioritisation of findings is left to the analyst.
 
 ### What Will Be Measured
-Each test run will be scored on a rubric with three dimensions, each scored 1 to 3:
+Each test run will be scored on a rubric with two dimensions, each scored 1 to 3:
 
 | Rubric Dimension | What It Measures | Scoring (1 to 3) |
 |---|---|---|
@@ -190,7 +190,7 @@ By the Week 6 check-in, the following parts of the app will be functional:
 The app interface will be functional enough to upload two files, run the analysis, and download a report. It will not yet be fully polished, but it will demonstrate the core pipeline end to end.
 
 ### What Evaluation Will Be in Place
-By Week 6, the evaluation rubric will be fully defined (three dimensions, scored 1 to 3, out of 9 points total). At least 3 to 4 synthetic test cases will have been run through the app and scored against ground truth. Initial results will be available showing where the app performs well and where it struggles.
+By Week 6, the evaluation rubric will be fully defined (two dimensions, scored 1 to 3, out of 6 points total). At least 3 to 4 synthetic test cases will have been run through the app and scored against ground truth. Initial results will be available showing where the app performs well and where it struggles.
 
 ### Baseline Comparison
 The prompt-only baseline (`baseline.py`) will have been run on the same 3 to 4 synthetic test cases and scored against the same ground truth. Initial side-by-side scores comparing the baseline against the app will be available, showing where tool use and structured outputs make a measurable difference.
