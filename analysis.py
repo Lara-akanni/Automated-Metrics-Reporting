@@ -16,13 +16,14 @@ Pipeline steps:
 
 import os
 import json
+import random
 import pandas as pd
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 from tools import TOOL_FUNCTIONS, TOOLS
 
-load_dotenv()
+load_dotenv(override=True)
 
 # Minimum fraction of columns that must overlap for analysis to proceed
 COLUMN_OVERLAP_THRESHOLD = 0.5
@@ -180,8 +181,15 @@ def compute_deltas(df1: pd.DataFrame, df2: pd.DataFrame) -> list[dict]:
 
         if pd.api.types.is_numeric_dtype(df1[col]):
             # ----- Numeric column -----
-            vals1 = [round(float(v), 6) for v in series1.tolist()]
-            vals2 = [round(float(v), 6) for v in series2.tolist()]
+            # Cap at 100 values so Gemini's function call arguments stay small.
+            # The summary stats (sum/mean) use the full series; the sample is
+            # only used for outlier detection and significance testing.
+            MAX_SAMPLE = 100
+            all_vals1 = [round(float(v), 6) for v in series1.tolist()]
+            all_vals2 = [round(float(v), 6) for v in series2.tolist()]
+            random.seed(42)
+            vals1 = random.sample(all_vals1, min(MAX_SAMPLE, len(all_vals1)))
+            vals2 = random.sample(all_vals2, min(MAX_SAMPLE, len(all_vals2)))
 
             deltas.append({
                 "column_name":      col,
@@ -341,7 +349,20 @@ def call_llm(deltas: list[dict]) -> list[dict]:
             config=config,
         )
 
-        candidate_parts = response.candidates[0].content.parts
+        # Guard against empty or blocked responses
+        if not response.candidates:
+            raise ValueError("Gemini returned no candidates. The request may have been blocked.")
+
+        candidate = response.candidates[0]
+
+        if candidate.content is None:
+            finish_reason = getattr(candidate, "finish_reason", "unknown")
+            raise ValueError(
+                f"Gemini returned empty content (finish_reason: {finish_reason}). "
+                "This may be a safety filter or an API issue."
+            )
+
+        candidate_parts = candidate.content.parts or []
 
         # Append model turn to conversation history
         contents.append(
