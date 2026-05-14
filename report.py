@@ -364,7 +364,7 @@ def _build_findings_table(styles: dict, findings: list) -> list:
             insight = insight[:197] + "..."
 
         impact_para = Paragraph(
-            f'<font color="#{txt_col.hexval()[1:]}"><b>{level}</b></font>',
+            f'<font color="#{txt_col.hexval()[2:]}"><b>{level}</b></font>',
             styles["impact_badge"],
         )
 
