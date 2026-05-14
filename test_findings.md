@@ -47,13 +47,33 @@ Each entry covers one file pair, what the app returned, and a manual score again
 - Correctly detected success/failure rate shift, CSAT drop, amount_usd changes, and response time
 - Correctly identified direction (increase/decrease) for all real findings
 
-**Issues identified:**
-1. **Date column treated as categorical** — produced 13 per-date breakdown findings (e.g. "events on 2025-05-03 decreased by 12%"). Date comparisons are not meaningful across two different weeks and add noise. Date/time/ID columns should be excluded from analysis.
-2. **Absolute differences instead of percentages** — changes shown as raw deltas; percentages would be more intuitive and meaningful for stakeholders.
-3. **Period 1 / Period 2 labels** — insights reference generic labels instead of the actual file name or week in question (e.g. "week of Apr 28" vs "week of May 5").
-4. **LLM making significance judgments** — phrases like "this is a significant shift in event distribution" are the LLM's opinion, not a statistical result. Significance decisions should be left to the analyst or executive; the app should only surface the tool-computed `is_significant` flag.
-5. **All findings showed ⚠️ Significant and 🔺 Outlier badges** — when everything is flagged, nothing stands out. The badges lose their meaning and make it harder to identify what actually matters.
-6. **% symbol missing** — percentage points should display with the % symbol for clarity.
+**Issues identified (all fixed before retest):**
+1. **Date column treated as categorical** — produced 13 per-date breakdown findings. Fixed by skipping date/ID/name columns in `compute_deltas()`.
+2. **Absolute differences instead of percentages** — Fixed by updating the system prompt to require % symbol on all numeric changes.
+3. **Period 1 / Period 2 labels** — Fixed by passing file names to the LLM and instructing it to use them in explanations.
+4. **LLM making significance judgments** — Fixed by removing opinion language from the prompt.
+5. **All findings showed ⚠️ and 🔺 badges** — Fixed by instructing the model to only set flags based on tool results.
+6. **% symbol missing** — Fixed alongside issue 2.
+
+---
+
+### Retest — After Fixes (2025-05-14)
+
+**Changes made:** All 6 issues above addressed in `analysis.py` (prompt rewrite, metadata column skip) and `app.py` (file name passing).
+
+| Dimension | Score (1–3) | Notes |
+|---|---|---|
+| Change Detection | 3 | 5 findings returned — all relevant (status, CSAT, amount, response time). No date noise. |
+| Explanation Quality | 3 | Specific and usable — changes expressed as percentages with % symbol, actual week names referenced, badges more selective |
+| **Total** | **6/6** | |
+| **Pass (5+)?** | **Yes** | |
+
+**Improvements confirmed:**
+- Date column noise eliminated — down from 18 findings to 5 clean findings ✅
+- Changes now shown as percentages with % symbol ✅
+- ⚠️ Significant and 🔺 Outlier badges more selective — not everything flagged ✅
+- Explanations reference actual period names (week names) not "Period 1/Period 2" ✅
+- LLM no longer makes its own significance judgments ✅
 
 ---
 
