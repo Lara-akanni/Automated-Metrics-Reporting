@@ -1,0 +1,10 @@
+[
+  {
+    "metric_name": "example_metric",
+    "expected_impact_level": "high",
+    "previous_value": 0,
+    "current_value": 0,
+    "direction": "decrease",
+    "notes": "Describe what was deliberately engineered in this test case"
+  }
+]

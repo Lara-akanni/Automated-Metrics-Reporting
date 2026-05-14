@@ -17,15 +17,15 @@
 
 ### Prerequisites
 - Python 3.9 or higher
-- An [Anthropic API key](https://console.anthropic.com/) — the app uses Claude for analysis and narrative generation
+- A [Google Gemini API key](https://aistudio.google.com/app/apikey) — the app uses Gemini for analysis and narrative generation
 
 ---
 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/Lara-akanni/genai_project.git
-cd genai_project
+git clone https://github.com/Lara-akanni/Automated-Metrics-Reporting.git
+cd Automated-Metrics-Reporting
 ```
 
 ---
@@ -58,7 +58,7 @@ The key packages used by this project are:
 | `streamlit` | Web app interface |
 | `pandas` | Excel file parsing and delta computation |
 | `openpyxl` | Reading `.xlsx` files |
-| `anthropic` | Claude API client (LLM + tool use) |
+| `google-generativeai` | Gemini API client (LLM + tool use) |
 | `reportlab` | PDF report generation |
 | `scipy` | Statistical significance testing |
 
@@ -69,17 +69,17 @@ The key packages used by this project are:
 Create a `.env` file in the project root (this file is git-ignored and should never be committed):
 
 ```bash
-ANTHROPIC_API_KEY=your_api_key_here
+GEMINI_API_KEY=your_api_key_here
 ```
 
 Or export it directly in your terminal session:
 
 ```bash
 # Mac/Linux
-export ANTHROPIC_API_KEY=your_api_key_here
+export GEMINI_API_KEY=your_api_key_here
 
 # Windows
-set ANTHROPIC_API_KEY=your_api_key_here
+set GEMINI_API_KEY=your_api_key_here
 ```
 
 ---
