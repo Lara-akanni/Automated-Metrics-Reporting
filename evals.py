@@ -3,12 +3,11 @@ evals.py
 --------
 Evaluation script for scoring app output against ground truth.
 
-Rubric (each dimension scored 1–3, max 9 points):
+Rubric (each dimension scored 1–3, max 6 points):
   1. Change Detection    — did the app catch all major changes?
-  2. Ranking Correctness — are the most impactful findings at the top?
-  3. Explanation Quality — are narratives clear and business-relevant?
+  2. Explanation Quality — are narratives clear and business-relevant?
 
-A score of 7+ indicates strong performance.
+A score of 5+ indicates strong performance.
 
 Usage:
   python evals.py                          # run all test cases in eval_cases/
@@ -27,9 +26,9 @@ from analysis import run_analysis
 # ---------------------------------------------------------------------------
 
 MAX_SCORE_PER_DIMENSION = 3
-NUM_DIMENSIONS          = 3
-MAX_TOTAL_SCORE         = MAX_SCORE_PER_DIMENSION * NUM_DIMENSIONS  # 9
-STRONG_PERFORMANCE      = 7
+NUM_DIMENSIONS          = 2
+MAX_TOTAL_SCORE         = MAX_SCORE_PER_DIMENSION * NUM_DIMENSIONS  # 6
+STRONG_PERFORMANCE      = 5
 
 
 # ---------------------------------------------------------------------------
@@ -61,32 +60,6 @@ def score_change_detection(app_findings: list[dict], ground_truth: list[dict]) -
     # TODO: implement change detection scoring
     # Extract metric names from both lists (normalise to lowercase)
     # Compute recall = matched / total expected
-    pass
-
-
-def score_ranking_correctness(app_findings: list[dict], ground_truth: list[dict]) -> int:
-    """
-    Score dimension 2: Ranking Correctness.
-
-    Check whether the app's top-ranked findings match the expected
-    high-impact findings from ground_truth.
-
-    Scoring:
-      3 — ranking is fully correct (top findings match expected order)
-      2 — mostly correct (top finding is right; minor ordering issues)
-      1 — ranking is wrong (low-impact findings ranked above high-impact ones)
-
-    Parameters
-    ----------
-    app_findings  : list of finding dicts (already sorted by app, most to least impactful)
-    ground_truth  : list of dicts sorted by expected impact (most impactful first),
-                    each with "metric_name" and "expected_impact_level"
-
-    Returns
-    -------
-    int score (1, 2, or 3)
-    """
-    # TODO: implement ranking correctness scoring
     pass
 
 
@@ -138,7 +111,6 @@ def run_test_case(case_path: str) -> dict:
     dict with keys:
         case_name               : str
         change_detection_score  : int
-        ranking_score           : int
         explanation_score       : int | None (None = needs manual review)
         total_score             : int | None
         passed                  : bool | None (True if total >= STRONG_PERFORMANCE)
@@ -149,7 +121,7 @@ def run_test_case(case_path: str) -> dict:
 
     # TODO: load period1.xlsx, period2.xlsx, and ground_truth.json from case_path
     # Call run_analysis(file1, file2)
-    # Score each dimension
+    # Score change_detection and explanation_quality
     # Return results dict
     pass
 
@@ -170,7 +142,7 @@ def run_eval_suite(cases_dir: str = "eval_cases") -> pd.DataFrame:
     Returns
     -------
     pd.DataFrame with one row per test case and columns:
-        case_name, change_detection, ranking, explanation, total, passed
+        case_name, change_detection, explanation, total, passed
     """
     # TODO: discover all subdirectories in cases_dir
     # Run run_test_case() for each

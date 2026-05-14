@@ -1,6 +1,6 @@
 # Automated Metrics Comparison and Reporting
 
-> A GenAI-powered app that compares two Excel datasets across time periods and produces a ranked, narrative-driven PDF report — replacing a hours-long manual analyst workflow.
+> A GenAI-powered app that compares two Excel datasets across time periods, detects all changes, and generates a narrative-driven PDF report for analyst review — replacing a hours-long manual workflow.
 
 ---
 
@@ -190,30 +190,33 @@ A web app (built with **Streamlit**) where the analyst uploads two Excel files a
     • run_significance_test()
             │
             ▼
-  LLM returns structured JSON findings, ranked by impact
+  LLM returns structured JSON findings
   (each finding: metric, prev value, curr value, delta,
-   direction, impact level, narrative explanation)
+   direction, outlier flag, significance flag, narrative explanation)
             │
             ▼
-  App formats findings into PDF report
-  (most impactful findings at the top)
+  App formats all findings into PDF report
             │
             ▼
-  [Analyst downloads and shares PDF]
+  [Analyst reviews findings and decides what matters most]
+  [Analyst downloads and shares PDF with stakeholders]
 ```
 
 ### Key Design Choices
 
 **1. Structured Outputs (JSON)**
-The LLM is prompted to return all findings as strict JSON rather than freeform prose. Each finding object includes: `metric_name`, `previous_value`, `current_value`, `delta`, `direction`, `impact_level`, and `explanation`. This makes it possible to programmatically sort findings by impact and assemble a consistent PDF regardless of the dataset domain.
+The LLM is prompted to return all findings as strict JSON rather than freeform prose. Each finding object includes: `metric_name`, `previous_value`, `current_value`, `delta`, `direction`, `is_outlier`, `is_significant`, and `explanation`. This ensures a consistent, machine-readable format that assembles reliably into a PDF regardless of the dataset domain.
 
 **2. Tool Use / Function Calling**
-Rather than asking the LLM to compute statistics itself (which would be unreliable), the LLM is given access to three backend functions it calls during analysis. This keeps the maths deterministic and auditable while letting the LLM focus on reasoning and narrative.
+Rather than asking the LLM to compute statistics itself (which would be unreliable), the LLM is given access to three backend functions it calls during analysis. This keeps the maths deterministic and auditable while letting the LLM focus on explanation.
 
-**3. No-configuration Design**
+**3. Analyst-led prioritisation**
+The app does not attempt to rank or prioritise findings by business importance — that judgment requires domain context the LLM does not have. Instead, all detected changes are surfaced and clearly explained, leaving prioritisation to the analyst who knows their stakeholders.
+
+**4. No-configuration Design**
 The analyst does not need to specify column types, stakeholder audience, or domain. The app infers all of this from the data. This means the same pipeline works for a marketing report and a revenue report without reconfiguration.
 
-**4. Built-in Guardrails**
+**5. Built-in Guardrails**
 - Refuses to run if column overlap between the two files is below 50%
 - Returns a clear "no significant changes found" message instead of fabricating findings
 - Normalises categorical values to lowercase before comparison to avoid false positives from formatting differences (e.g. `"active"` vs `"Active"` vs `"ACTIVE"`)
@@ -226,12 +229,11 @@ The analyst does not need to specify column types, stakeholder audience, or doma
 The baseline is the **manual Excel workflow** described above. For each test case, the analyst independently analyzes the same file pair and records their findings. The app's output is then compared against that ground truth.
 
 ### Evaluation Rubric
-Each test run is scored on three dimensions, each rated 1–3, for a maximum of **9 points**. A score of **7 or higher** indicates strong performance.
+Each test run is scored on two dimensions, each rated 1–3, for a maximum of **6 points**. A score of **5 or higher** indicates strong performance.
 
 | Dimension | What It Measures | 1 | 2 | 3 |
 |---|---|---|---|---|
 | **Change Detection** | Did the app correctly identify all major numeric and categorical changes? | Missed key changes | Caught most | Caught all |
-| **Ranking Correctness** | Are the most impactful findings ranked at the top? | Ranking is wrong | Mostly correct | Fully correct |
 | **Explanation Quality** | Are the narrative explanations clear and business-relevant? | Unclear or generic | Acceptable | Clear and specific |
 
 ### Test Cases
@@ -256,13 +258,12 @@ In addition, **2–3 manual spot checks** are run where the analyst analyzes the
 │  Overall score summary                                            │
 │  ─────────────────────                                            │
 │  Test cases run:        [ X ] of 8–12                            │
-│  Average total score:   [ X.X ] / 9                              │
-│  Cases scoring 7+:      [ X ] / [ X ]                            │
+│  Average total score:   [ X.X ] / 6                              │
+│  Cases scoring 5+:      [ X ] / [ X ]                            │
 │                                                                   │
 │  Per-dimension averages                                           │
 │  ──────────────────────                                           │
 │  Change Detection:      [ X.X ] / 3                              │
-│  Ranking Correctness:   [ X.X ] / 3                              │
 │  Explanation Quality:   [ X.X ] / 3                              │
 │                                                                   │
 │  Key findings                                                     │

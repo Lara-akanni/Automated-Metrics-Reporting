@@ -1,7 +1,7 @@
 # Evaluation Rubric
 
-Each test run is scored across **three dimensions**, each rated **1–3**, for a maximum of **9 points**.
-A score of **7 or higher** indicates strong performance.
+Each test run is scored across **two dimensions**, each rated **1–3**, for a maximum of **6 points**.
+A score of **5 or higher** indicates strong performance.
 
 ---
 
@@ -24,22 +24,7 @@ A score of **7 or higher** indicates strong performance.
 
 ---
 
-### 2. Ranking Correctness
-**Question:** Are the most impactful findings ranked at the top?
-
-| Score | Meaning |
-|---|---|
-| 3 | Fully correct — top findings match expected order |
-| 2 | Mostly correct — top finding is right; minor ordering issues elsewhere |
-| 1 | Wrong — low-impact findings ranked above high-impact ones |
-
-**How to score:**
-- Compare the app's top 1–3 findings against the expected high-impact findings in `ground_truth.json`
-- A ranking is "fully correct" if the #1 finding matches expected and high-impact findings all appear above low-impact ones
-
----
-
-### 3. Explanation Quality
+### 2. Explanation Quality
 **Question:** Are the narrative explanations clear and business-relevant?
 
 | Score | Meaning |
@@ -60,10 +45,9 @@ A score of **7 or higher** indicates strong performance.
 | Dimension | Score (1–3) | Notes |
 |---|---|---|
 | Change Detection | | |
-| Ranking Correctness | | |
 | Explanation Quality | | |
-| **Total** | **/9** | |
-| **Pass (7+)?** | Yes / No | |
+| **Total** | **/6** | |
+| **Pass (5+)?** | Yes / No | |
 
 ---
 
@@ -100,7 +84,6 @@ analyses the same file pair and compares their findings to the app's output.
 |---|---|
 | Total test cases run | |
 | Average Change Detection score | / 3 |
-| Average Ranking Correctness score | / 3 |
 | Average Explanation Quality score | / 3 |
-| Average total score | / 9 |
-| Cases scoring 7+ (pass rate) | / |
+| Average total score | / 6 |
+| Cases scoring 5+ (pass rate) | / |

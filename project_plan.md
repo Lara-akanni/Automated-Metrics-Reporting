@@ -40,11 +40,11 @@ The app accepts two Excel files representing datasets from two different time pe
 ### What Part of the Workflow Benefits from AI
 Three specific parts of this workflow benefit from language models:
 
-**1. Reasoning and Ranking:** The model reasons about which changes are most significant and in what order they should be presented. A 5% drop in a metric that is typically stable carries more weight than a 5% drop in a metric that fluctuates regularly. The LLM applies that kind of contextual reasoning to prioritize findings.
+**1. Narrative Generation:** The model writes clear, business-friendly explanations for each finding. Instead of just displaying a number, the report communicates the story. For example: "Success rate dropped from 92% to 84% this week. This is statistically significant and may warrant further investigation."
 
-**2. Narrative Generation:** The model writes clear, business-friendly explanations for each finding. Instead of just displaying a number, the report communicates the story. For example: "Success rate dropped from 92% to 84% this week, the largest single-week decline observed in this dataset. This is statistically significant and may warrant further investigation."
+**2. Tool Use for Computation:** The model calls backend functions to compute percentage changes, run statistical significance tests, and detect outliers using methods like interquartile range. This ensures the analysis is mathematically rigorous and auditable, not just based on the model's intuition.
 
-**3. Tool Use for Computation:** The model calls backend functions to compute percentage changes, run statistical significance tests, and detect outliers using methods like interquartile range. This ensures the analysis is mathematically rigorous and auditable, not just based on the model's intuition.
+> **Note:** The app does not rank or prioritise findings by business importance. Ranking requires domain context — such as which metrics matter most to a given stakeholder — that the LLM cannot reliably determine. All detected changes are surfaced and explained; prioritisation is left to the analyst.
 
 ### Why a Simpler Non-AI Tool Would Not Be Enough
 A spreadsheet template or basic Python script can compute deltas and flag outliers, but it cannot:
@@ -66,15 +66,15 @@ The app follows a clear multi-step pipeline:
 1. The analyst uploads two Excel files through the app interface.
 2. The app parses and loads both files, detects all columns, and aligns them by name. Columns that do not exist in both files are flagged separately.
 3. For numeric columns, the app computes raw deltas (the difference between the two values). For categorical columns, the app flags any values that changed (for example, a status field that changed from "Active" to "Inactive").
-4. The LLM calls backend functions to compute percentage changes, run statistical significance tests, and detect outliers. It uses these results to rank all findings by impact magnitude.
-5. The LLM generates structured JSON output for each finding, including: metric name, previous value, current value, delta, direction (up or down), impact level (high, medium, or low), and a narrative explanation.
-6. The app formats the ranked findings and explanations into a professional PDF report with the most impactful findings at the top.
-7. The analyst downloads or shares the PDF directly with stakeholders.
+4. The LLM calls backend functions to compute percentage changes, run statistical significance tests, and detect outliers. It uses these results to inform its narrative explanations.
+5. The LLM generates structured JSON output for each finding, including: metric name, previous value, current value, delta, direction (up or down), outlier flag, significance flag, and a narrative explanation.
+6. The app formats all findings and explanations into a professional PDF report.
+7. The analyst reviews all findings, decides what is most important for their specific stakeholders, and shares the PDF.
 
 ### Two Course Concepts Integrated
 
 #### Concept 1: Anatomy of an LLM Call (Structured Outputs)
-The LLM is prompted to return all findings in strict JSON format rather than freeform prose. Each finding object includes: metric name, previous value, current value, delta, direction, impact level, and explanation. This structured output allows the app to programmatically sort findings by impact, build the PDF report consistently, and produce the same format regardless of the domain the data comes from. Without structured outputs, the app would not be able to reliably rank findings or assemble the PDF from LLM-generated content.
+The LLM is prompted to return all findings in strict JSON format rather than freeform prose. Each finding object includes: metric name, previous value, current value, delta, direction, outlier flag, significance flag, and explanation. This structured output allows the app to build the PDF report consistently and produce the same format regardless of the dataset domain. Without structured outputs, the app would not be able to reliably extract and display individual findings from LLM-generated content.
 
 #### Concept 2: Tool Use and Function Calling
 Rather than asking the LLM to compute statistical tests or detect outliers itself (which would be unreliable), the app gives the LLM access to backend functions it can call: `compute_percentage_change`, `detect_outliers` (using interquartile range), and `run_significance_test`. The LLM calls these functions during its analysis step and uses the results to inform its ranking and narrative. This keeps the math deterministic and auditable while the LLM focuses on reasoning and explanation.
@@ -90,7 +90,7 @@ The analyst opens a simple web app built with Streamlit or equivalent. They are 
 ## Section 5: Evaluation Plan
 
 ### What Success Looks Like
-The app successfully identifies all major changes between the two datasets, ranks them correctly by impact or magnitude, flags real outliers, and generates explanations that are clear enough for a stakeholder to understand without needing to see the raw data. The report should read like something a skilled analyst would write, not like an automated summary.
+The app successfully identifies all major changes between the two datasets, correctly flags real outliers and statistically significant changes, and generates explanations that are clear enough for a stakeholder to understand without needing to see the raw data. The report should read like something a skilled analyst would write, not like an automated summary. Prioritisation of findings is left to the analyst.
 
 ### What Will Be Measured
 Each test run will be scored on a rubric with three dimensions, each scored 1 to 3:
@@ -98,10 +98,9 @@ Each test run will be scored on a rubric with three dimensions, each scored 1 to
 | Rubric Dimension | What It Measures | Scoring (1 to 3) |
 |---|---|---|
 | **Change Detection** | Did the app correctly identify all major numeric and categorical changes? | 1 = missed key changes, 2 = caught most, 3 = caught all |
-| **Ranking Correctness** | Are the most impactful findings ranked at the top? | 1 = ranking is wrong, 2 = mostly correct, 3 = fully correct |
 | **Explanation Quality** | Are the narrative explanations clear and business-relevant? | 1 = unclear or generic, 2 = acceptable, 3 = clear and specific |
 
-Each test run is scored out of 9 points. A score of 7 or higher indicates strong performance.
+Each test run is scored out of 6 points. A score of 5 or higher indicates strong performance.
 
 ### Test Set
 The evaluation will use 8 to 12 synthetic mock Excel file pairs created specifically for testing. Each file pair is engineered with known changes built in (for example, success rate deliberately dropped by 12%, a status column deliberately changed from Active to Inactive for a subset of records, a revenue figure deliberately spiked). Because the changes are known ahead of time, scoring against ground truth is objective.

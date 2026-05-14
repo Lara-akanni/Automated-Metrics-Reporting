@@ -70,26 +70,25 @@ if st.button("▶ Run Analysis", disabled=not (file_period1 and file_period2), t
     if not findings:
         st.info("No significant changes detected between the two files.")
     else:
-        st.success(f"Analysis complete — {len(findings)} finding(s) ranked by impact.")
+        st.success(f"Analysis complete — {len(findings)} change(s) detected.")
+        st.caption("All detected changes are shown below. Review and prioritise based on what matters most to your stakeholders.")
 
         # -------------------------------------------------------------------
-        # Display findings preview
+        # Display findings
         # -------------------------------------------------------------------
-        st.subheader("Top Findings")
+        st.subheader("Detected Changes")
 
         for i, finding in enumerate(findings, start=1):
             # TODO: render each finding card once findings schema is confirmed
             # Expected keys: metric_name, previous_value, current_value,
-            #                delta, direction, impact_level, explanation
-            impact_colour = {
-                "high": "🔴",
-                "medium": "🟡",
-                "low": "🟢",
-            }.get(finding.get("impact_level", "low"), "⚪")
+            #                delta, direction, is_outlier, is_significant,
+            #                explanation
+
+            outlier_badge    = " 🔺 Outlier"      if finding.get("is_outlier")     else ""
+            sig_badge        = " ⚠️ Significant"   if finding.get("is_significant") else ""
 
             with st.expander(
-                f"{impact_colour} {i}. {finding.get('metric_name', 'Metric')} "
-                f"({finding.get('impact_level', '').capitalize()} Impact)"
+                f"{i}. {finding.get('metric_name', 'Metric')}{outlier_badge}{sig_badge}"
             ):
                 col_a, col_b, col_c = st.columns(3)
                 col_a.metric("Period 1", finding.get("previous_value", "—"))

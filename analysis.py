@@ -141,14 +141,15 @@ def call_llm(deltas: list[dict]) -> list[dict]:
 
     Returns
     -------
-    list of finding dicts, ranked from most to least impactful.
+    list of finding dicts, one per changed column.
     Each finding has keys:
         metric_name     : str
         previous_value  : float | str
         current_value   : float | str
         delta           : float | str
         direction       : "increase" | "decrease" | "no change" | "changed"
-        impact_level    : "high" | "medium" | "low"
+        is_outlier      : bool
+        is_significant  : bool
         explanation     : str  — plain-English narrative for stakeholders
 
     Raises
@@ -161,6 +162,8 @@ def call_llm(deltas: list[dict]) -> list[dict]:
     # 3. Handle tool call responses — execute the matching Python function
     #    and return the result back to the model
     # 4. Parse the final structured JSON response into a list of finding dicts
+    # Note: do NOT ask the model to rank or prioritise findings —
+    #       all detected changes should be returned as-is for analyst review
     pass
 
 
