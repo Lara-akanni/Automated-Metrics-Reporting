@@ -124,32 +124,50 @@ All layout issues from initial test resolved after `report.py` rewrite:
 
 ## Run 3 — Example 3: Revenue Month-over-Month
 
-**Date:**
+**Date:** 2025-05-15
 **File pair:** `sample_data/example3_revenue_mom/`
 **Engineered changes:** Product Line C revenue ↓ ~30% (fewer transactions + lower amounts) | Lines A and B stable
 
 ### App Findings
-*(Paste or summarise what the app returned here)*
 
-| # | Metric Name | Period 1 | Period 2 | Direction | Outlier? | Significant? |
-|---|---|---|---|---|---|---|
-| 1 | | | | | | |
-| 2 | | | | | | |
-| 3 | | | | | | |
+5 findings returned. Detected changes:
+- ✅ Completed status distribution — detected
+- ✅ Refunded status distribution — detected
+- ✅ Product lines distribution — detected (Line C drop visible)
+- ⚠️ Revenue amounts — detected but currency symbol missing from insights (e.g. should say "$" or "USD")
+- ⚠️ Outlier flagged in Revenue April — but explanation did not describe what the outlier value was
 
-**Explanations (copy from app):**
->
+### Issues Identified (to fix before retest)
 
-### Scoring
+1. **Currency missing from insights** — when revenue/amount metrics are detected, the explanation should reference the currency (e.g. "$" or "USD") not just the raw number
+2. **Outlier description too vague** — stated "outliers were detected in Revenue April" without specifying what the outlier value was. Should describe the unusual value (e.g. "an unusually high revenue of $X was detected")
+3. **"percentage points" in insights** — categorical changes described as "decreased by X percentage points" instead of using the % symbol. All changes should use % symbol consistently
+
+### PDF
+Layout clean and complete ✅. Same wording issues as insights (percentage points, no currency).
+
+### Scoring (pre-fix — pending retest)
 
 | Dimension | Score (1–3) | Notes |
 |---|---|---|
-| Change Detection | | |
-| Explanation Quality | | |
-| **Total** | **/6** | |
-| **Pass (5+)?** | | |
+| Change Detection | 3 | All engineered changes surfaced — Product Line C drop, status distributions, revenue |
+| Explanation Quality | 2 | Correct findings but currency missing, outlier details vague, "percentage points" wording |
+| **Total** | **5/6** | |
+| **Pass (5+)?** | **Yes (borderline)** | |
 
 ### Observations
+
+**What worked:**
+- All 3 engineered change areas detected ✅
+- PDF layout clean ✅
+- Product line distribution shift correctly identified ✅
+
+**Issues to fix before final score:**
+1. Currency symbol in revenue insights
+2. Outlier value detail in explanations
+3. "Percentage points" → "%" in all insights
+
+*Retest scheduled after prompt fixes.*
 
 ---
 

@@ -283,16 +283,26 @@ INSTRUCTIONS
 
 2. For categorical columns — compare the percentage distributions across categories.
    Only include a categorical finding if a category shifted by more than 5 percentage points.
+   Express categorical shifts using the % symbol — never use "percentage points".
+   Example: "the share of completed transactions decreased by 8%" not "decreased by 8 percentage points".
 
 3. Set flags ONLY based on tool results:
    - is_outlier = true ONLY if detect_outliers returned has_outliers: true
    - is_significant = true ONLY if run_significance_test returned is_significant: true
    - Do NOT set both flags to true for every finding — most findings will have one or neither.
    - Do NOT add your own judgment about whether something is significant.
+   - When is_outlier = true, describe the outlier in the explanation — state what the unusual value was
+     (e.g. "an unusually high revenue of $4,200 was detected in April 2025").
+     Do NOT just say "outliers were detected" without specifying what they were.
 
-4. Express ALL numeric changes as percentages using the % symbol.
-   Example: "increased by 12.4%" not "increased by 3 units".
+4. Express ALL numeric changes as percentages using the % symbol — never write "percentage points".
+   Example: "increased by 12.4%" not "increased by 3 units" or "increased by 12.4 percentage points".
    Use the percentage_change value returned by compute_percentage_change.
+
+4a. For revenue and amount metrics, always include the currency in values and explanations.
+    If the metric name contains "revenue", "amount", "price", "usd", "gbp", "eur", or "sales",
+    include the appropriate currency symbol (e.g. "$4,200" not "4200") in previous_value,
+    current_value, and the explanation.
 
 5. Explanations must reference the actual period names provided (not "Period 1" / "Period 2").
    Use the file/period names given in the data context below.
@@ -308,7 +318,7 @@ INSTRUCTIONS
    Do NOT say "this is a significant shift" or make recommendations.
    Leave interpretation to the analyst.
 
-7. Your FINAL response must be ONLY a valid JSON array — no markdown, no commentary.
+8. Your FINAL response must be ONLY a valid JSON array — no markdown, no commentary.
 
 OUTPUT SCHEMA
 [
