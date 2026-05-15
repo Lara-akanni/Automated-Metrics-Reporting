@@ -207,3 +207,36 @@ All layout issues from initial test resolved after `report.py` rewrite:
 |---|---|---|---|---|---|
 | 1 | | | | | |
 | 2 | | | | | |
+
+---
+
+## Baseline Comparison — prompt-only, no tools
+
+**Run on:** Example 1 — Product Metrics (Week-over-Week)
+**File pair:** `Product_week_apr28.xlsx` vs `Product_week_may05.xlsx`
+**Date:** 2025-05-15
+**How run:** `python3 run_baseline.py` in terminal
+
+### Baseline vs App — Side by Side
+
+| Dimension | Baseline (prompt-only) | App (tool use + JSON) |
+|---|---|---|
+| Findings returned | 90 | 5 |
+| Previous / Current values | "unknown" for all | Actual values with % changes |
+| Output format | Markdown fragments as findings | Clean structured rows |
+| Change Detection score | 1 | 3 |
+| Explanation Quality score | 1 | 3 |
+| **Total** | **2/6** | **6/6** |
+| **Pass (5+)?** | **No** | **Yes** |
+
+### What the baseline output showed
+- The model returned 90 "findings" — each bullet point of its markdown prose response was parsed as a separate finding
+- `Previous` and `Current` fields were "unknown" across all findings — no structured values extracted
+- Markdown syntax bled through: `**Old Value (Period 1):**`, `*1. Metric*` appeared as finding titles
+- No percentage changes, no outlier flags, no significance flags
+- Findings were unactionable — a stakeholder could not use this output
+
+### Conclusion
+Same model, same data — without tool use and structured JSON output, the output is unusable. Tool use keeps math in code (reliable) and language with the LLM (readable). Structured JSON makes every response parseable and drives both the UI and PDF directly.
+
+*Note: Baseline run on Example 1 only. The failure pattern (fragmented output, no structured values) is expected to be consistent across all examples — one run is sufficient to demonstrate the contrast.*
