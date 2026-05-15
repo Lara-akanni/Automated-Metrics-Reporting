@@ -183,7 +183,9 @@ elif st.session_state.findings is not None:
                 col_b.metric("Period 2", curr, delta=delta_display)
                 col_c.metric("Direction", direction.capitalize() if direction else "—")
 
-                st.markdown(f"**Insight:** {finding.get('explanation', '_No explanation provided._')}")
+                explanation = finding.get('explanation', '_No explanation provided._')
+                explanation = explanation.replace('$', r'\$')
+                st.markdown(f"**Insight:** {explanation}")
 
                 badge_cols = st.columns(2)
                 badge_cols[0].markdown(
