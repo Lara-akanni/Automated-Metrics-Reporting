@@ -264,8 +264,8 @@ Ground truth JSON files are stored in `eval_cases/` and used by `evals.py` for a
 
 Two baselines were used:
 
-**1. Manual Excel workflow (time baseline)**
-The same analysis performed manually takes approximately 45 minutes per file pair: opening both files side by side, writing delta formulas, scanning for outliers, and drafting narrative explanations. The app completes the same analysis in under 2 minutes.
+**1. Manual Excel workflow (time baseline only)**
+The same analysis performed manually takes approximately 45 minutes per file pair: opening both files side by side, writing delta formulas, scanning for outliers, and drafting narrative explanations. The app completes the same analysis in under 2 minutes. This baseline measures time saved — not output quality.
 
 **2. Prompt-only Gemini (quality baseline)**
 The same Gemini model was run on the same file pairs with no tools and no structured output — just a direct prompt asking it to compare the data. This is implemented in `baseline.py` and run via `python3 run_baseline.py`. The purpose is to isolate the value of tool use and structured JSON output specifically.
