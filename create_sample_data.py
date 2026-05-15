@@ -198,9 +198,10 @@ def create_example3():
 # Example 4 — Mixed Dataset  (Account records, month-over-month)
 # ===========================================================================
 # Each row = one account record.
-# Key columns : record_id, account_name, status, volume, rate_pct, score, nps_score
+# Key columns : record_id, account_name, status, volume, rate_pct, account_health_score, nps_score
 # Engineered  : 8 of 40 accounts flip Active → Inactive in Period 2;
 #               volume drops for those accounts; nps_score declines overall
+# nps_score values are 0–10 raw survey ratings (Promoters 9–10, Passives 7–8, Detractors 0–6)
 # ===========================================================================
 
 def create_example4():
@@ -231,34 +232,38 @@ def create_example4():
 
     volume_p1  = rng.integers(500, 9500, size=n)
     rate_p1    = rng.uniform(58, 88, size=n).round(1)
-    score_p1   = rng.integers(55, 96, size=n)
-    nps_p1     = rng.integers(20, 72, size=n)
+    health_p1  = rng.integers(55, 96, size=n)
+    # NPS: 0–10 raw survey ratings per account (Promoters 9–10, Passives 7–8, Detractors 0–6)
+    # Period 1: mostly Promoters and Passives
+    nps_p1     = rng.choice([7, 8, 9, 9, 10, 10], size=n)
 
-    vol_delta  = rng.integers(-400, 500, size=n)
+    vol_delta   = rng.integers(-400, 500, size=n)
     vol_delta[inactive_idx] = rng.integers(-2000, -800, size=len(inactive_idx))
-    rate_delta = rng.uniform(-4, 3, size=n).round(1)
-    score_delta = rng.integers(-5, 4, size=n)
-    nps_delta  = rng.integers(-10, 6, size=n)
-    nps_delta[inactive_idx] = rng.integers(-20, -10, size=len(inactive_idx))
+    rate_delta  = rng.uniform(-4, 3, size=n).round(1)
+    health_delta = rng.integers(-5, 4, size=n)
+    # Period 2: NPS declines — inactive accounts pull down to Detractor range
+    nps_p2      = nps_p1.copy()
+    nps_p2      = rng.choice([7, 8, 9, 9, 10], size=n)          # base: slight drop
+    nps_p2[inactive_idx] = rng.choice([0, 1, 2, 3, 4, 5, 6],    # inactive → Detractors
+                                       size=len(inactive_idx))
 
-    volume_p2 = (volume_p1 + vol_delta).clip(0)
-    rate_p2   = (rate_p1 + rate_delta).clip(0, 100).round(1)
-    score_p2  = (score_p1 + score_delta).clip(0, 100)
-    nps_p2    = (nps_p1 + nps_delta).clip(-100, 100)
+    volume_p2      = (volume_p1 + vol_delta).clip(0)
+    rate_p2        = (rate_p1 + rate_delta).clip(0, 100).round(1)
+    health_p2      = (health_p1 + health_delta).clip(0, 100)
 
-    def build_mixed(statuses, volumes, rates, scores, nps_vals):
+    def build_mixed(statuses, volumes, rates, health_scores, nps_vals):
         return pd.DataFrame({
-            "record_id":    [f"ACC-{str(i).zfill(3)}" for i in range(1, n + 1)],
-            "account_name": account_names,
-            "status":       statuses,
-            "volume":       volumes,
-            "rate_pct":     rates,
-            "score":        scores,
-            "nps_score":    nps_vals,
+            "record_id":            [f"ACC-{str(i).zfill(3)}" for i in range(1, n + 1)],
+            "account_name":         account_names,
+            "status":               statuses,
+            "volume":               volumes,
+            "rate_pct":             rates,
+            "account_health_score": health_scores,
+            "nps_score":            nps_vals,
         })
 
-    p1 = build_mixed(status_p1, volume_p1, rate_p1, score_p1, nps_p1)
-    p2 = build_mixed(status_p2, volume_p2, rate_p2, score_p2, nps_p2)
+    p1 = build_mixed(status_p1, volume_p1, rate_p1, health_p1, nps_p1)
+    p2 = build_mixed(status_p2, volume_p2, rate_p2, health_p2, nps_p2)
 
     save(p1, "example4_mixed", "Mixed_april_2025.xlsx")
     save(p2, "example4_mixed", "Mixed_may_2025.xlsx")
