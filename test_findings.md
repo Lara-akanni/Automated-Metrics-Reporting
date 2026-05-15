@@ -235,7 +235,6 @@ Layout clean and complete ✅. Same wording issues as insights (percentage point
 ---
 
 ## Aggregate Summary
-*(Fill in after all 4 runs are complete)*
 
 | Test Case | CD Score | EQ Score | Total | Pass? |
 |---|---|---|---|---|

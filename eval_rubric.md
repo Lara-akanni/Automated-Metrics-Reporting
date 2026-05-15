@@ -55,11 +55,10 @@ A score of **5 or higher** indicates strong performance.
 
 | # | Case Name | Domain | Engineered Changes | Date Run | App Score | Baseline Score | App Pass? |
 |---|---|---|---|---|---|---|---|
-| 1 | `product_metrics_wk` | Product | Success rate ↓, satisfaction ↓ | | | | |
-| 2 | `marketing_metrics_wk` | Marketing | Traffic ↑, conversion ↓ | | | | |
-| 3 | `revenue_mom` | Revenue | One product line significant ↓ | | | | |
-| 4 | `mixed_numeric_categorical` | Mixed | Numeric changes + status → Inactive | | | | |
-| 5 | *(add more as created)* | | | | | | |
+| 1 | `example1_product` | Product | Success rate ↓, CSAT ↓, response time ↑ | 2025-05-14 | 6/6 | 2/6 | ✅ Yes |
+| 2 | `example2_marketing` | Marketing | Traffic ↑, conversion ↓, signup ↓ | 2025-05-15 | 6/6 | —/6 | ✅ Yes |
+| 3 | `example3_revenue` | Revenue | Product Line C revenue ↓ ~30% | 2025-05-15 | 6/6 | —/6 | ✅ Yes |
+| 4 | `example4_mixed` | Mixed | 8 accounts → Inactive, volume ↓, NPS ↓ | 2025-05-15 | 6/6 | —/6 | ✅ Yes |
 
 ---
 
@@ -78,12 +77,10 @@ analyses the same file pair and compares their findings to the app's output.
 
 ## Aggregate Results Summary
 
-> **[TO BE COMPLETED AFTER TESTING]**
-
-| Metric | App | Baseline |
+| Metric | App | Prompt-only Baseline |
 |---|---|---|
-| Total test cases run | | |
-| Average Change Detection score | / 3 | / 3 |
-| Average Explanation Quality score | / 3 | / 3 |
-| Average total score | / 6 | / 6 |
-| Cases scoring 5+ (pass rate) | / | / |
+| Total test cases run | 4 | 1 (Example 1 only) |
+| Average Change Detection score | 3.0 / 3 | 1.0 / 3 |
+| Average Explanation Quality score | 3.0 / 3 | 1.0 / 3 |
+| Average total score | 6.0 / 6 | 2.0 / 6 |
+| Cases scoring 5+ (pass rate) | 4 / 4 | 0 / 1 |

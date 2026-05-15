@@ -129,17 +129,25 @@ Automated-Metrics-Reporting/
 ├── app.py                  # Streamlit app entry point
 ├── analysis.py             # Parse → align → delta → LLM tool loop
 ├── baseline.py             # Prompt-only baseline (no tools) for comparison
+├── run_baseline.py         # Terminal runner for the prompt-only baseline
 ├── tools.py                # Backend math functions called by the LLM
 ├── report.py               # PDF generation from structured findings
+├── report.md               # PDF design spec and change log
 ├── evals.py                # Automated scoring against ground truth
 ├── requirements.txt        # Python dependencies
 ├── .env.example            # API key template — copy to .env and fill in
 ├── eval_set.md             # Human-readable evaluation test cases
 ├── eval_rubric.md          # Scoring rubric (2 dimensions, max 6 points)
+├── test_findings.md        # Manual test log — all 4 runs with scores
 ├── project_plan.md         # Full project plan and design decisions
 ├── create_sample_data.py   # Script to regenerate synthetic Excel test files
-├── eval_cases/             # Ground truth JSON files for automated eval
-└── sample_data/            # Synthetic Excel file pairs for testing
+├── screenshots/            # App artifact screenshots for README
+├── eval_cases/             # Ground truth JSON + Excel pairs for automated eval
+│   ├── example1_product/
+│   ├── example2_marketing/
+│   ├── example3_revenue/
+│   └── example4_mixed/
+└── sample_data/            # Synthetic Excel file pairs for manual testing
     ├── example1_product_metrics/
     ├── example2_marketing_metrics/
     ├── example3_revenue_mom/

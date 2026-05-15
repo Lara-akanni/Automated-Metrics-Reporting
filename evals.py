@@ -15,11 +15,17 @@ Usage:
 
 Test case directory structure:
   eval_cases/
-    product_metrics_wk/
+    example1_product/
       period1.xlsx
       period2.xlsx
       ground_truth.json
-    marketing_metrics_wk/
+    example2_marketing/
+      period1.xlsx
+      period2.xlsx
+      ground_truth.json
+    example3_revenue/
+      ...
+    example4_mixed/
       ...
 
 ground_truth.json format:

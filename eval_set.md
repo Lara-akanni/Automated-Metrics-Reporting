@@ -15,9 +15,9 @@ and what a good output should do.
 **Type:** Normal
 
 **Input:**
-Two weekly transaction-level payment logs (`product_metrics_wk_p1.xlsx` / `_p2.xlsx`).
-~350 rows in Period 1, ~370 rows in Period 2.
-Key columns: `transaction_id`, `date`, `amount`, `status` (Success / Failed), `satisfaction_score`.
+Two weekly transaction-level payment logs (`Product_week_apr28.xlsx` / `Product_week_may05.xlsx`).
+50 rows in each period.
+Key columns: `transaction_id`, `date`, `amount_usd`, `status` (Success / Failed), `csat_score`, `response_time_ms`.
 
 **What was engineered:**
 - Payment success rate dropped from ~92% to ~85% (engineered by flipping ~25 extra transactions to Failed)
@@ -38,14 +38,14 @@ Key columns: `transaction_id`, `date`, `amount`, `status` (Success / Failed), `s
 **Type:** Normal
 
 **Input:**
-Two weekly web session logs (`marketing_metrics_wk_p1.xlsx` / `_p2.xlsx`).
-~520 rows in Period 1, ~680 rows in Period 2.
-Key columns: `session_id`, `date`, `channel`, `page_views`, `session_duration`, `signed_up`, `converted`.
+Two weekly web session logs (`Marketing_week_apr28.xlsx` / `Marketing_week_may05.xlsx`).
+50 rows in Period 1, 65 rows in Period 2.
+Key columns: `session_id`, `date`, `channel`, `pages_viewed`, `time_on_site_secs`, `bounced`, `signed_up`, `converted`.
 
 **What was engineered:**
-- Total sessions increased ~31% (traffic spike)
-- Conversion rate dropped from ~8% to ~4.5% (more visitors, fewer converting)
-- Sign-up rate dropped from ~15% to ~10%
+- Total sessions increased ~30% (traffic spike: 50 → 65 rows)
+- Conversion rate dropped from ~8% to ~4% (more visitors, fewer converting)
+- Sign-up rate dropped from ~12% to ~6%
 
 **What a good output should do:**
 - Detect that session volume increased and frame it as a traffic spike
@@ -62,9 +62,9 @@ Key columns: `session_id`, `date`, `channel`, `page_views`, `session_duration`, 
 **Type:** Normal
 
 **Input:**
-Two monthly payment transaction tables (`revenue_mom_p1.xlsx` / `_p2.xlsx`).
-~480 rows in Period 1, ~398 rows in Period 2.
-Key columns: `transaction_id`, `date`, `product_line` (A / B / C), `amount`, `status`.
+Two monthly payment transaction tables (`Revenue_april_2025.xlsx` / `Revenue_may_2025.xlsx`).
+~50 rows in Period 1, ~44 rows in Period 2.
+Key columns: `transaction_id`, `date`, `product_line` (A / B / C), `amount_usd`, `status`.
 
 **What was engineered:**
 - Product Line C revenue dropped ~30% (engineered by removing rows and reducing amounts)
@@ -86,19 +86,20 @@ Key columns: `transaction_id`, `date`, `product_line` (A / B / C), `amount`, `st
 **Type:** Normal
 
 **Input:**
-Two account-level snapshots (`mixed_numeric_categorical_p1.xlsx` / `_p2.xlsx`).
-80 rows in each period (one row per account, same accounts across both files).
-Key columns: `account_name`, `status` (Active / Inactive), `monthly_volume`, `rate_pct`, `score`, `nps_score`.
+Two account-level snapshots (`Mixed_april_2025.xlsx` / `Mixed_may_2025.xlsx`).
+40 rows in each period (one row per account, same accounts across both files).
+Key columns: `record_id`, `account_name`, `status` (Active / Inactive), `volume`, `rate_pct`, `account_health_score`, `nps_score` (0–10 raw survey ratings).
 
 **What was engineered:**
-- 18 of 80 accounts flipped from Active → Inactive (22.5% of accounts churned)
-- `monthly_volume` decreased for accounts that became Inactive
-- `rate_pct` increased slightly across the board
-- `nps_score` declined for the Inactive group
+- 8 of 40 accounts flipped from Active → Inactive (20% of accounts churned)
+- `volume` decreased for accounts that became Inactive
+- `rate_pct` varied slightly across the board
+- `nps_score` declined for the Inactive group (pulled toward Detractor range: 0–6)
 
 **What a good output should do:**
-- Detect the categorical shift in `status` — specifically that Active accounts decreased from 80 to ~62 and flag the 18 accounts that became Inactive
-- Detect changes in `monthly_volume`, `rate_pct`, and `nps_score` as numeric findings
+- Detect the categorical shift in `status` — specifically that Active accounts decreased from 32 to 32 and Inactive increased from 0 to 8, reporting counts not just percentages
+- Detect changes in `volume`, `rate_pct`, `account_health_score`, and `nps_score` as numeric findings
+- For `nps_score`: bucket responses into Promoters (9–10), Passives (7–8), Detractors (0–6) and report the NPS score and breakdown
 - Call `compute_percentage_change` for each numeric metric
 - Provide a business-relevant explanation for the status shift — e.g., "22% of accounts moved to Inactive, which may indicate churn risk or account closures that warrant follow-up"
 - Not treat all accounts as identical — the finding should reflect that the numeric changes are linked to the status change (the accounts that went Inactive drove the volume decline)
