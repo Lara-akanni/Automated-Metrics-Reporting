@@ -1,0 +1,21 @@
+{
+  "case_name": "example2_marketing",
+  "domain": "Marketing",
+  "expected_changes": [
+    {
+      "metric": "signed_up",
+      "direction": "decrease",
+      "description": "Signup rate dropped from 12% to 6% — fewer sessions resulting in signups"
+    },
+    {
+      "metric": "converted",
+      "direction": "decrease",
+      "description": "Conversion rate dropped from 8% to 4% — more traffic but fewer conversions"
+    },
+    {
+      "metric": "pages_viewed",
+      "direction": "change",
+      "description": "Session volume increased (traffic spike from 50 to 65 rows)"
+    }
+  ]
+}

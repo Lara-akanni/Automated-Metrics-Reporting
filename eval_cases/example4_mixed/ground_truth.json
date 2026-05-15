@@ -1,0 +1,21 @@
+{
+  "case_name": "example4_mixed",
+  "domain": "Mixed",
+  "expected_changes": [
+    {
+      "metric": "status",
+      "direction": "decrease",
+      "description": "8 of 40 accounts flipped from Active to Inactive in Period 2"
+    },
+    {
+      "metric": "volume",
+      "direction": "decrease",
+      "description": "Transaction volume dropped for accounts that became inactive"
+    },
+    {
+      "metric": "nps_score",
+      "direction": "decrease",
+      "description": "NPS score declined — inactive accounts pulled Detractor count up"
+    }
+  ]
+}

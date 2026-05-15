@@ -1,0 +1,21 @@
+{
+  "case_name": "example3_revenue",
+  "domain": "Revenue",
+  "expected_changes": [
+    {
+      "metric": "amount_usd",
+      "direction": "decrease",
+      "description": "Total revenue dropped ~7% driven by Product Line C decline"
+    },
+    {
+      "metric": "product_line",
+      "direction": "decrease",
+      "description": "Product Line C share of transactions declined ~30%"
+    },
+    {
+      "metric": "status",
+      "direction": "change",
+      "description": "Transaction status distribution changed — Completed and Refunded proportions shifted"
+    }
+  ]
+}

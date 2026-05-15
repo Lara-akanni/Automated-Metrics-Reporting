@@ -1,0 +1,26 @@
+{
+  "case_name": "example1_product",
+  "domain": "Product",
+  "expected_changes": [
+    {
+      "metric": "status",
+      "direction": "decrease",
+      "description": "Payment success rate dropped from ~92% to ~85% — Failed transactions increased"
+    },
+    {
+      "metric": "csat_score",
+      "direction": "decrease",
+      "description": "Average customer satisfaction score dropped from 4.3 to 3.7"
+    },
+    {
+      "metric": "amount_usd",
+      "direction": "increase",
+      "description": "Average transaction amount increased slightly"
+    },
+    {
+      "metric": "response_time_ms",
+      "direction": "increase",
+      "description": "Average response time increased with outlier detected"
+    }
+  ]
+}

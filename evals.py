@@ -147,7 +147,7 @@ def score_change_detection(
     return score, caught, missed
 
 
-def score_explanation_quality(findings: list[dict], interactive: bool = False) -> int | None:
+def score_explanation_quality(findings: list[dict], interactive: bool = False):
     """
     Score dimension 2: Explanation Quality.
 
@@ -412,15 +412,15 @@ def _print_summary(df: pd.DataFrame, errors: list = None) -> None:
     ]
     avgs = {c: df[c].dropna().mean() for c in numeric_cols}
 
+    app_eq_avg   = f"{avgs['app_explanation']:.1f}"   if avgs['app_explanation'] == avgs['app_explanation']   else "—"
+    app_tot_avg  = f"{avgs['app_total']:.1f}"          if avgs['app_total'] == avgs['app_total']               else "—"
+    base_eq_avg  = f"{avgs['baseline_explanation']:.1f}" if avgs['baseline_explanation'] == avgs['baseline_explanation'] else "—"
+    base_tot_avg = f"{avgs['baseline_total']:.1f}"     if avgs['baseline_total'] == avgs['baseline_total']     else "—"
+
     print(
         f"{'AVERAGE':<30} "
-        f"{avgs['app_change_detection']:>6.1f} "
-        f"{(f\"{avgs['app_explanation']:.1f}\" if avgs['app_explanation'] == avgs['app_explanation'] else '—'):>6} "
-        f"{(f\"{avgs['app_total']:.1f}\" if avgs['app_total'] == avgs['app_total'] else '—'):>6}  "
-        f"  "
-        f"{avgs['baseline_change_detection']:>7.1f} "
-        f"{(f\"{avgs['baseline_explanation']:.1f}\" if avgs['baseline_explanation'] == avgs['baseline_explanation'] else '—'):>7} "
-        f"{(f\"{avgs['baseline_total']:.1f}\" if avgs['baseline_total'] == avgs['baseline_total'] else '—'):>7}"
+        f"{avgs['app_change_detection']:>6.1f} {app_eq_avg:>6} {app_tot_avg:>6}  "
+        f"  {avgs['baseline_change_detection']:>7.1f} {base_eq_avg:>7} {base_tot_avg:>7}"
     )
 
     print("\nCD = Change Detection (auto-scored)   EQ = Explanation Quality (manual)")
