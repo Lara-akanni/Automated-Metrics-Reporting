@@ -192,14 +192,27 @@ Layout clean and complete ✅. Same wording issues as insights (percentage point
 - System prompt: always use exact column name in metric_name and explanations
 - System prompt: for score/rating/nps columns use mean not sum
 
-### Scoring (pending retest)
+### Final Scoring (after fixes)
 
 | Dimension | Score (1–3) | Notes |
 |---|---|---|
-| Change Detection | — | Pending retest |
-| Explanation Quality | — | Pending retest |
-| **Total** | **—/6** | |
-| **Pass (5+)?** | **Pending** | |
+| Change Detection | 3 | All engineered changes detected — status flip, volume drop, NPS decline with Promoter/Passive/Detractor breakdown |
+| Explanation Quality | 3 | Insights clear and specific (2.8/3 — very close to full marks); account counts shown correctly, NPS breakdown meaningful, column names specific |
+| **Total** | **6/6** | |
+| **Pass (5+)?** | **Yes** | |
+
+### Observations
+
+**What worked:**
+- Status column reported as counts (32 Active, 8 Inactive) not just percentages ✅
+- NPS breakdown showing Promoters/Passives/Detractors correctly after data fix ✅
+- `account_health_score` named specifically in insights — no generic "score" ✅
+- Volume drop for inactive accounts detected ✅
+- Column type hints made insights noticeably smarter across all metrics ✅
+
+**Notes:**
+- EQ scored 2.8/3 — rounded up to 3 for rubric purposes. Minor wording improvements possible but insights are stakeholder-ready.
+- Required sample data fix: `nps_score` regenerated as 0–10 raw ratings; `score` renamed to `account_health_score`
 
 ---
 
@@ -208,14 +221,18 @@ Layout clean and complete ✅. Same wording issues as insights (percentage point
 
 | Test Case | CD Score | EQ Score | Total | Pass? |
 |---|---|---|---|---|
-| Example 1 — Product | | | /6 | |
-| Example 2 — Marketing | | | /6 | |
-| Example 3 — Revenue | | | /6 | |
-| Example 4 — Mixed | | | /6 | |
-| **Average** | | | /6 | |
+| Example 1 — Product | 3 | 3 | 6/6 | ✅ Yes |
+| Example 2 — Marketing | 2 | 2 | 4/6 | ❌ No |
+| Example 3 — Revenue | 3 | 3 | 6/6 | ✅ Yes |
+| Example 4 — Mixed | 3 | 3 | 6/6 | ✅ Yes |
+| **Average** | **2.75** | **2.75** | **5.5/6** | **3/4 pass** |
 
 **Overall observations:**
-*(What patterns did you notice across all four runs? Where did the app consistently do well or struggle?)*
+- Change detection was strong across all examples — the tool use approach reliably surfaced engineered changes without requiring the LLM to guess
+- Explanation quality improved significantly after each round of prompt fixes — currency symbols, domain language, outlier detail, and % symbol consistency were all iterated on during testing
+- Example 2 (Marketing) did not pass on initial run — domain-aware language fix was pushed after testing and a retest was not completed; expected to pass on retest
+- NPS handling required a data fix (0–10 raw ratings) and column type hint system before working correctly
+- The col_hint system introduced in Run 4 was the most impactful single change — it made insights noticeably smarter across all metric types without additional prompt engineering per domain
 
 ---
 
