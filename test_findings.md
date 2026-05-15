@@ -79,25 +79,46 @@ Each entry covers one file pair, what the app returned, and a manual score again
 
 ## Run 2 — Example 2: Marketing Metrics (Week-over-Week)
 
-**Date:**
+**Date:** 2025-05-15
 **File pair:** `sample_data/example2_marketing_metrics/`
 **Engineered changes:** Session volume ↑ (traffic spike, 50 → 65 rows) | Signup rate ↓ (12% → 6%) | Conversion rate ↓ (8% → 4%)
 
-**Date:** 2025-05-14
-
 ### App Findings
-*(To be completed — findings noted, full log pending)*
 
-### PDF Report Issues Identified
-1. **Content cut at edges** — table overflows page width; margins too narrow
-2. **Incomplete content** — findings cut off; page too small for all rows
-3. **No page numbers** — PDF should be numbered
-4. **Insight not domain-aware** — explanations are generic rather than framed in marketing context (e.g. should reference traffic, signups, conversion in marketing terms)
+9 findings returned. Notable findings:
 
-*All issues above to be fixed in `report.py` and `report.md` before scoring.*
+| # | Metric Name | Previous | Current | Change | Notes |
+|---|---|---|---|---|---|
+| ✓ | Signup volume | 5 | 3 | -40% | Plausible given engineered rate drop |
+| ✓ | Conversion volume | 5 | 0 | -100% | Caught but value needs verification — expected ~2, not 0 |
+| ? | Session volume ↑ | — | — | — | Unclear if traffic spike was explicitly surfaced |
+
+### PDF Report
+All layout issues from initial test resolved after `report.py` rewrite:
+- ✅ No edge clipping
+- ✅ Page numbers showing
+- ✅ All content visible
+- ⚠️ Explanations not framed in marketing terms — stated direction only, no domain language (e.g. "traffic", "signups", "conversion rate"). Domain-aware prompt fix pushed after this run — retest needed.
+
+### Scoring
+
+| Dimension | Score (1–3) | Notes |
+|---|---|---|
+| Change Detection | 2 | Caught signup and conversion drops but session volume spike unclear; some findings may be noise |
+| Explanation Quality | 2 | Correct direction but generic — not framed in marketing context; no domain language |
+| **Total** | **4/6** | |
+| **Pass (5+)?** | **No** | |
 
 ### Observations
-PDF layout needs fixing before this run can be properly scored. App findings and scoring to be completed after PDF fixes are applied.
+
+**What worked:**
+- PDF layout fully fixed — clean, numbered, no overflow ✅
+- Signup and conversion rate drops detected ✅
+
+**Issues to address:**
+1. **Domain language missing** — explanations should reference traffic, signups, conversion in marketing terms. Domain-aware prompt fix already pushed; retest needed.
+2. **Conversion volume showing 0** — verify against sample data whether 0 conversions in Period 2 is accurate or a data issue.
+3. **Session volume spike** — confirm whether the traffic increase (50→65 rows) was explicitly surfaced as a finding.
 
 ---
 
