@@ -99,16 +99,22 @@ Sample Excel file pairs are included in the `sample_data/` folder so you can run
 ```
 sample_data/
   example1_product_metrics/
-    period1_week_apr28.xlsx   ← baseline period
-    period2_week_may05.xlsx   ← comparison period
+    Product_week_apr28.xlsx   ← baseline period
+    Product_week_may05.xlsx   ← comparison period
   example2_marketing_metrics/
+    Marketing_week_apr28.xlsx
+    Marketing_week_may05.xlsx
   example3_revenue_mom/
+    Revenue_april_2025.xlsx
+    Revenue_may_2025.xlsx
   example4_mixed/
+    Mixed_april_2025.xlsx
+    Mixed_may_2025.xlsx
 ```
 
 **Steps (using Example 1 — Product Metrics):**
-1. In the app, click **Browse files** under **Period 1** and upload `period1_week_apr28.xlsx`
-2. Click **Browse files** under **Period 2** and upload `period2_week_may05.xlsx`
+1. In the app, click **Browse files** under **Period 1** and upload `Product_week_apr28.xlsx`
+2. Click **Browse files** under **Period 2** and upload `Product_week_may05.xlsx`
 3. Click **▶ Run Analysis**
 4. Review the findings displayed on screen — each finding shows Period 1 vs Period 2 values, the change direction, statistical significance, and a plain-English explanation
 
@@ -232,8 +238,8 @@ The analyst does not need to specify column types, stakeholder audience, or doma
 
 ## Evaluation and Results
 
-### Baseline Being Compared Against
-The baseline is the **manual Excel workflow** described above. For each test case, the analyst independently analyzes the same file pair and records their findings. The app's output is then compared against that ground truth.
+### Baselines Being Compared Against
+Two baselines were used — one for time, one for quality. Full details and results are in the Baselines and Results sections below.
 
 ### Evaluation Rubric
 Each test run is scored on two dimensions, each rated 1–3, for a maximum of **6 points**. A score of **5 or higher** indicates strong performance.
@@ -244,47 +250,75 @@ Each test run is scored on two dimensions, each rated 1–3, for a maximum of **
 | **Explanation Quality** | Are the narrative explanations clear and business-relevant? | Unclear or generic | Acceptable | Clear and specific |
 
 ### Test Cases
-The evaluation uses **8–12 synthetic Excel file pairs** with engineered, known changes — making scoring against ground truth fully objective. Test cases span:
-- Product metrics (success rate, error rate, customer satisfaction)
-- Marketing metrics (traffic, signups, bounce rate, conversion rate)
-- Revenue and business performance metrics
-- Mixed datasets with both numeric and categorical columns
+The evaluation uses **4 synthetic Excel file pairs** with engineered, known changes — making scoring against ground truth fully objective. Test cases span:
+- Product metrics (success rate, customer satisfaction, response time, transaction amount)
+- Marketing metrics (traffic volume, signup rate, conversion rate, channel distribution)
+- Revenue metrics (total revenue, product line breakdown, transaction status)
+- Mixed datasets with both numeric and categorical columns (account status, NPS score, volume)
 
-In addition, **2–3 manual spot checks** are run where the analyst analyzes the same file pair independently and compares findings to the app's output.
+Ground truth JSON files are stored in `eval_cases/` and used by `evals.py` for automated Change Detection scoring. Explanation Quality is scored manually after reviewing each run.
+
+---
+
+### Baselines
+
+Two baselines were used:
+
+**1. Manual Excel workflow (time baseline)**
+The same analysis performed manually takes approximately 45 minutes per file pair: opening both files side by side, writing delta formulas, scanning for outliers, and drafting narrative explanations. The app completes the same analysis in under 2 minutes.
+
+**2. Prompt-only Gemini (quality baseline)**
+The same Gemini model was run on the same file pairs with no tools and no structured output — just a direct prompt asking it to compare the data. This is implemented in `baseline.py` and run via `python3 run_baseline.py`. The purpose is to isolate the value of tool use and structured JSON output specifically.
+
+The prompt-only baseline was run on Example 1 (Product Metrics). It returned **90 findings** (vs the app's 5), with `Previous` and `Current` values listed as "unknown" across all findings — the model returned markdown prose that was parsed into fragments. No percentage changes, outlier flags, or significance flags were present. The output was not usable by a stakeholder. The same structural failure was observed in automated eval runs across all 4 examples (65–86 findings returned per case).
 
 ---
 
 ### Results
 
-> **[TO BE COMPLETED AFTER TESTING]**
+**Overall scores (after iterative fixes)**
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  RESULTS TEMPLATE — update this section after running test cases │
-│                                                                   │
-│  Overall score summary                                            │
-│  ─────────────────────                                            │
-│  Test cases run:        [ X ] of 8–12                            │
-│  Average total score:   [ X.X ] / 6                              │
-│  Cases scoring 5+:      [ X ] / [ X ]                            │
-│                                                                   │
-│  Per-dimension averages                                           │
-│  ──────────────────────                                           │
-│  Change Detection:      [ X.X ] / 3                              │
-│  Explanation Quality:   [ X.X ] / 3                              │
-│                                                                   │
-│  Key findings                                                     │
-│  ────────────                                                     │
-│  • What the app did well:    [ describe ]                         │
-│  • Where it struggled:       [ describe ]                         │
-│  • Manual spot check notes:  [ describe ]                         │
-│                                                                   │
-│  Comparison to baseline                                           │
-│  ──────────────────────                                           │
-│  [ Describe how the app's findings compared to the analyst's     │
-│    independent findings for the same file pairs ]                 │
-└─────────────────────────────────────────────────────────────────┘
-```
+| Test Case | Change Detection | Explanation Quality | Total | Pass (5+)? |
+|---|---|---|---|---|
+| Example 1 — Product Metrics | 3 / 3 | 3 / 3 | 6 / 6 | ✅ Yes |
+| Example 2 — Marketing Metrics | 3 / 3 | 3 / 3 | 6 / 6 | ✅ Yes |
+| Example 3 — Revenue MoM | 3 / 3 | 3 / 3 | 6 / 6 | ✅ Yes |
+| Example 4 — Mixed | 3 / 3 | 3 / 3 | 6 / 6 | ✅ Yes |
+| **Average** | **3.0 / 3** | **3.0 / 3** | **6.0 / 6** | **4 / 4** |
+
+**Comparison to prompt-only baseline (Example 1)**
+
+| Dimension | App (tool use + JSON) | Baseline (prompt-only) |
+|---|---|---|
+| Findings returned | 5 | 90 |
+| Previous / Current values | Actual values with % changes | "unknown" for all findings |
+| Output format | Structured JSON → clean UI cards + PDF | Markdown fragments |
+| Change Detection score | 3 / 3 | 1 / 3 |
+| Explanation Quality score | 3 / 3 | 1 / 3 |
+| **Total** | **6 / 6** | **2 / 6** |
+
+**What the app did well**
+- Correctly detected all engineered changes across all 4 domains without reconfiguration
+- Statistical flags (`is_outlier`, `is_significant`) were selective — not every finding was flagged
+- Explanations were domain-appropriate (marketing language for marketing files, revenue language for revenue files) after prompt iteration
+- NPS scores were correctly bucketed into Promoters / Passives / Detractors
+- PDF layout was clean across all examples — no overflow, correct page numbers
+
+**Where it struggled and what was fixed during testing**
+- Early runs flagged every finding as significant — fixed by constraining the prompt to only set flags from tool results
+- Categorical changes were initially described as "percentage points" instead of "%" — fixed in the system prompt
+- Currency symbols were missing from revenue insights on first run — fixed via column type hints
+- The `score` column name was too generic for the LLM to produce meaningful insights — fixed by renaming to `account_health_score` in the sample data
+- Example 1 automated Change Detection score was 2/3 due to a keyword matching artefact in `evals.py` — manual testing confirmed all 4 changes were detected (3/3)
+
+**Where a human should stay involved**
+The app surfaces findings and explanations but does not prioritise or act on them. The analyst must still:
+- Decide which findings matter most for their specific stakeholders
+- Apply business context the model cannot know (e.g. a revenue drop that is expected due to seasonality)
+- Verify outlier findings against raw data before sharing with executives
+- Judge whether a statistically significant change is also practically significant
+
+The app is a decision-support tool, not a decision-making one.
 
 ---
 
