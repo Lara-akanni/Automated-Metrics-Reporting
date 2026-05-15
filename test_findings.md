@@ -122,6 +122,24 @@ All layout issues from initial test resolved after `report.py` rewrite:
 
 ---
 
+### Retest — After Fixes (2025-05-15)
+
+**Changes made:** Domain-aware prompt, col_hint system, outlier descriptions, % symbol fixes, dollar sign LaTeX fix in app.py.
+
+| Dimension | Score (1–3) | Notes |
+|---|---|---|
+| Change Detection | 3 | 8 findings returned — all engineered changes detected including session volume spike ✅ |
+| Explanation Quality | 3 | Outliers clearly defined, marketing domain language used, insights stakeholder-ready |
+| **Total** | **6/6** | |
+| **Pass (5+)?** | **Yes** | |
+
+**Improvements confirmed:**
+- Marketing domain language used correctly (traffic, signups, conversion) ✅
+- Outlier values described specifically ✅
+- 8 clean findings — session volume spike surfaced ✅
+
+---
+
 ## Run 3 — Example 3: Revenue Month-over-Month
 
 **Date:** 2025-05-15
@@ -222,17 +240,18 @@ Layout clean and complete ✅. Same wording issues as insights (percentage point
 | Test Case | CD Score | EQ Score | Total | Pass? |
 |---|---|---|---|---|
 | Example 1 — Product | 3 | 3 | 6/6 | ✅ Yes |
-| Example 2 — Marketing | 2 | 2 | 4/6 | ❌ No |
+| Example 2 — Marketing | 3 | 3 | 6/6 | ✅ Yes (after retest) |
 | Example 3 — Revenue | 3 | 3 | 6/6 | ✅ Yes |
 | Example 4 — Mixed | 3 | 3 | 6/6 | ✅ Yes |
-| **Average** | **2.75** | **2.75** | **5.5/6** | **3/4 pass** |
+| **Average** | **3.0** | **3.0** | **6/6** | **4/4 pass** |
 
 **Overall observations:**
-- Change detection was strong across all examples — the tool use approach reliably surfaced engineered changes without requiring the LLM to guess
-- Explanation quality improved significantly after each round of prompt fixes — currency symbols, domain language, outlier detail, and % symbol consistency were all iterated on during testing
-- Example 2 (Marketing) did not pass on initial run — domain-aware language fix was pushed after testing and a retest was not completed; expected to pass on retest
-- NPS handling required a data fix (0–10 raw ratings) and column type hint system before working correctly
-- The col_hint system introduced in Run 4 was the most impactful single change — it made insights noticeably smarter across all metric types without additional prompt engineering per domain
+- All 4 examples passed after iterative fixes — final average score 6/6
+- Change detection was strong across all domains — tool use reliably surfaced engineered changes without the LLM guessing
+- Explanation quality required the most iteration: currency symbols, domain language, outlier descriptions, % symbol consistency, and NPS bucketing were all improved across runs
+- Example 2 (Marketing) initially scored 4/6 — domain-aware prompt and col_hint system brought it to 6/6 on retest
+- The col_hint system was the most impactful single improvement — tagging columns as score/currency/volume/status/nps before the LLM sees them made insights noticeably smarter across all domains
+- NPS handling required both a sample data fix (0–10 raw ratings) and the col_hint detection to work correctly
 
 ---
 
