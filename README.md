@@ -290,76 +290,39 @@ In addition, **2–3 manual spot checks** are run where the analyst analyzes the
 
 ## Artifact Snapshot
 
-> **[TO BE COMPLETED — add screenshots, sample files, and/or a recorded clip]**
+All screenshots below are from a live run using the Marketing Metrics sample files (`Marketing_week_apr28.xlsx` vs `Marketing_week_may05.xlsx`).
 
-### App Interface
+---
 
-```
-┌──────────────────────────────────────────────────────┐
-│  SCREENSHOT PLACEHOLDER                               │
-│                                                       │
-│  Add a screenshot of the Streamlit upload screen      │
-│  showing the two file upload areas and Run button.    │
-│                                                       │
-│  Suggested filename: screenshot_upload_screen.png     │
-└──────────────────────────────────────────────────────┘
-```
+### 1. Upload the Files
 
-### Sample Output — Top Findings Preview
+![Upload screen showing two Marketing Excel files ready for analysis](screenshots/01_upload_files.png)
 
-```
-┌──────────────────────────────────────────────────────┐
-│  SCREENSHOT PLACEHOLDER                               │
-│                                                       │
-│  Add a screenshot of the in-app findings preview      │
-│  showing ranked findings with impact labels and       │
-│  short explanations.                                  │
-│                                                       │
-│  Suggested filename: screenshot_findings_preview.png  │
-└──────────────────────────────────────────────────────┘
-```
+The analyst uploads two Excel files — Period 1 (previous) and Period 2 (current). No configuration required.
 
-### Sample PDF Report
+---
 
-```
-┌──────────────────────────────────────────────────────┐
-│  FILE PLACEHOLDER                                     │
-│                                                       │
-│  Add a sample generated PDF report from one of your   │
-│  synthetic test cases (use mock data only).           │
-│                                                       │
-│  Suggested filename: sample_report_product_metrics.pdf│
-└──────────────────────────────────────────────────────┘
-```
+### 2. Changes Detected
 
-### Sample Input Files
+![List of 8 detected changes with outlier and significance badges](screenshots/02_changes_detected.png)
 
-```
-┌──────────────────────────────────────────────────────┐
-│  FILE PLACEHOLDER                                     │
-│                                                       │
-│  Add one of your synthetic Excel file pairs so        │
-│  reviewers can reproduce the demo run.                │
-│                                                       │
-│  Suggested filenames:                                 │
-│    sample_period1.xlsx                                │
-│    sample_period2.xlsx                                │
-└──────────────────────────────────────────────────────┘
-```
+The app returns all detected changes as expandable cards. Outlier and significance badges are shown inline so the analyst can triage at a glance.
 
-### Demo Clip *(optional but recommended)*
+---
 
-```
-┌──────────────────────────────────────────────────────┐
-│  CLIP PLACEHOLDER                                     │
-│                                                       │
-│  Record a short screen capture (30–90 seconds)        │
-│  showing: upload → run analysis → view findings       │
-│  → download PDF.                                      │
-│                                                       │
-│  Suggested filename: demo_clip.gif  or  demo_clip.mp4 │
-└──────────────────────────────────────────────────────┘
-```
+### 3. Finding Detail
+
+![Expanded finding showing Period 1 vs Period 2 values, delta, and insight text](screenshots/03_finding_detail.png)
+
+Each finding shows the previous and current values, the percentage change, direction, and a plain-English insight explaining what changed and by how much — framed in the domain language of the report.
+
+---
+
+### 4. PDF Report
+
+![PDF report showing header, period strip, findings table, and impact key](screenshots/04_pdf_report.png)
+
+The downloadable PDF report includes a header bar with report title and date, a period strip, a summary row, a findings table colour-coded by impact level (High / Medium / Low), and a footer disclaimer.
 
 ---
 
