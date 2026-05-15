@@ -170,21 +170,116 @@ def compute_deltas(df1: pd.DataFrame, df2: pd.DataFrame) -> list[dict]:
         period2_value_counts, period1_percentages, period2_percentages,
         period1_total, period2_total, all_categories
     """
-    # Columns to skip — dates, timestamps, IDs, and name identifiers
-    # are not meaningful metrics to compare across periods.
+    # ------------------------------------------------------------------
+    # Helpers: metadata detection and column type classification
+    # ------------------------------------------------------------------
+
     def _is_metadata_col(name: str, series: pd.Series) -> bool:
+        """Return True for columns that are identifiers or timestamps —
+        not meaningful metrics to compare across periods."""
         if pd.api.types.is_datetime64_any_dtype(series):
             return True
         n = name.lower()
-        if n == "id" or n.endswith("_id"):
+        # ID / reference patterns
+        if n in ("id", "ref", "code", "key", "no", "num", "number", "seq"):
             return True
-        if "date" in n or "timestamp" in n:
+        if n.endswith("_id") or n.endswith("_ref") or n.endswith("_code"):
             return True
-        if n.endswith("_name") or n == "name":
+        if n.startswith("id_") or n.startswith("ref_"):
             return True
-        if "reference" in n or "invoice" in n:
+        # Date / time patterns
+        if any(k in n for k in ("date", "timestamp", "time", "created", "updated")):
             return True
+        # Name / label patterns
+        if n in ("name",) or n.endswith("_name") or n.endswith("_label"):
+            return True
+        # Finance doc references
+        if any(k in n for k in ("reference", "invoice", "order_no", "record_number",
+                                 "entry_ref", "transaction_id", "txn_id")):
+            return True
+        # High-cardinality string check — if almost every value is unique,
+        # it's likely an identifier (e.g. account_id, email)
+        if not pd.api.types.is_numeric_dtype(series):
+            if len(series) > 0 and series.nunique() / len(series) > 0.95:
+                return True
         return False
+
+    def _classify_col_hint(name: str, series: pd.Series) -> str:
+        """Return a semantic hint so the LLM knows how to handle each column.
+
+        Hints:
+          nps_scale   — NPS/CSAT/satisfaction ratings on a 0–10 scale
+          score       — rate/ratio/percentage/average metric (use mean)
+          currency    — monetary value (show currency symbol, use sum)
+          volume      — count/quantity metric (use sum)
+          status      — categorical status column (report counts, not %)
+          categorical — other categorical column (report % distribution)
+        """
+        n = name.lower()
+
+        # NPS / satisfaction / CSAT (0–10 scale)
+        if any(k in n for k in ("nps", "csat", "satisfaction", "rating",
+                                 "promoter", "detractor")):
+            if pd.api.types.is_numeric_dtype(series):
+                vals = pd.to_numeric(series, errors="coerce").dropna()
+                if len(vals) > 0 and vals.between(0, 10).all():
+                    return "nps_scale"
+
+        # Score / rate / ratio metrics (use mean, no currency)
+        if any(k in n for k in ("score", "rate", "ratio", "pct", "percent",
+                                 "avg", "average", "mean", "index",
+                                 "success_rate", "conversion_rate",
+                                 "response_time", "latency")):
+            return "score"
+
+        # Currency / monetary (use sum, show $ symbol)
+        if any(k in n for k in ("revenue", "amount", "price", "usd", "gbp",
+                                 "eur", "sales", "income", "cost", "earnings",
+                                 "spend", "budget", "profit", "fee", "charge",
+                                 "gmv", "mrr", "arr", "ltv", "arpu")):
+            return "currency"
+
+        # Volume / count (use sum, no currency)
+        if any(k in n for k in ("count", "volume", "total", "qty", "quantity",
+                                 "sessions", "visits", "signups", "orders",
+                                 "transactions", "users", "accounts", "leads")):
+            return "volume"
+
+        # Status categorical — values like Active/Inactive, Yes/No, Pass/Fail
+        if not pd.api.types.is_numeric_dtype(series):
+            status_keywords = {
+                "active", "inactive", "enabled", "disabled",
+                "open", "closed", "pending", "completed",
+                "cancelled", "canceled", "approved", "rejected",
+                "yes", "no", "true", "false", "pass", "fail",
+                "success", "failed", "refunded",
+            }
+            unique_vals = {v.lower() for v in series.astype(str).unique()}
+            if unique_vals & status_keywords:
+                return "status"
+            return "categorical"
+
+        return "general"
+
+    def _nps_breakdown(vals: pd.Series) -> dict:
+        total      = len(vals)
+        promoters  = int((vals >= 9).sum())
+        passives   = int(((vals >= 7) & (vals <= 8)).sum())
+        detractors = int((vals <= 6).sum())
+        nps_score  = round(
+            (promoters / total - detractors / total) * 100, 1
+        ) if total > 0 else 0
+        return {
+            "promoters":  promoters,
+            "passives":   passives,
+            "detractors": detractors,
+            "nps_score":  nps_score,
+            "total":      total,
+        }
+
+    # ------------------------------------------------------------------
+    # Main delta loop
+    # ------------------------------------------------------------------
 
     deltas = []
 
@@ -198,11 +293,10 @@ def compute_deltas(df1: pd.DataFrame, df2: pd.DataFrame) -> list[dict]:
         if _is_metadata_col(col, series1):
             continue   # skip date/ID/name columns — not meaningful metrics
 
+        hint = _classify_col_hint(col, series1)
+
         if pd.api.types.is_numeric_dtype(df1[col]):
             # ----- Numeric column -----
-            # Cap at 100 values so Gemini's function call arguments stay small.
-            # The summary stats (sum/mean) use the full series; the sample is
-            # only used for outlier detection and significance testing.
             MAX_SAMPLE = 100
             all_vals1 = [round(float(v), 6) for v in series1.tolist()]
             all_vals2 = [round(float(v), 6) for v in series2.tolist()]
@@ -213,6 +307,7 @@ def compute_deltas(df1: pd.DataFrame, df2: pd.DataFrame) -> list[dict]:
             delta_entry = {
                 "column_name":       col,
                 "column_type":       "numeric",
+                "col_hint":          hint,
                 "period1_sum":       round(float(series1.sum()),  4),
                 "period2_sum":       round(float(series2.sum()),  4),
                 "period1_mean":      round(float(series1.mean()), 4),
@@ -223,33 +318,13 @@ def compute_deltas(df1: pd.DataFrame, df2: pd.DataFrame) -> list[dict]:
                 "period2_row_count": len(vals2),
             }
 
-            # ----- NPS detection -----
-            # If the column name contains "nps" and all values are in 0–10 range,
-            # bucket into Promoters (9–10), Passives (7–8), Detractors (0–6)
-            # and compute the NPS score for each period.
-            col_lower = col.lower()
-            if "nps" in col_lower:
+            # NPS / satisfaction scale — bucket into Promoters / Passives / Detractors
+            if hint == "nps_scale":
                 s1_full = pd.Series(all_vals1)
                 s2_full = pd.Series(all_vals2)
-                if s1_full.between(0, 10).all() and s2_full.between(0, 10).all():
-                    def _nps_breakdown(vals: pd.Series) -> dict:
-                        total = len(vals)
-                        promoters   = int((vals >= 9).sum())
-                        passives    = int(((vals >= 7) & (vals <= 8)).sum())
-                        detractors  = int((vals <= 6).sum())
-                        nps_score   = round(
-                            (promoters / total - detractors / total) * 100, 1
-                        ) if total > 0 else 0
-                        return {
-                            "promoters":  promoters,
-                            "passives":   passives,
-                            "detractors": detractors,
-                            "nps_score":  nps_score,
-                            "total":      total,
-                        }
-                    delta_entry["column_type"]    = "nps"
-                    delta_entry["period1_nps"]    = _nps_breakdown(s1_full)
-                    delta_entry["period2_nps"]    = _nps_breakdown(s2_full)
+                delta_entry["column_type"] = "nps"
+                delta_entry["period1_nps"] = _nps_breakdown(s1_full)
+                delta_entry["period2_nps"] = _nps_breakdown(s2_full)
 
             deltas.append(delta_entry)
 
@@ -276,15 +351,16 @@ def compute_deltas(df1: pd.DataFrame, df2: pd.DataFrame) -> list[dict]:
             )
 
             deltas.append({
-                "column_name":            col,
-                "column_type":            "categorical",
-                "period1_value_counts":   counts1,
-                "period2_value_counts":   counts2,
-                "period1_percentages":    pct1,
-                "period2_percentages":    pct2,
-                "period1_total":          total1,
-                "period2_total":          total2,
-                "all_categories":         all_categories,
+                "column_name":          col,
+                "column_type":          "categorical",
+                "col_hint":             hint,
+                "period1_value_counts": counts1,
+                "period2_value_counts": counts2,
+                "period1_percentages":  pct1,
+                "period2_percentages":  pct2,
+                "period1_total":        total1,
+                "period2_total":        total2,
+                "all_categories":       all_categories,
             })
 
     return deltas
@@ -305,27 +381,47 @@ You have three tools — always call them before writing any finding:
 
 INSTRUCTIONS
 
-1. For EVERY numeric column (column_type = "numeric") call all three tools:
-   a. compute_percentage_change — use period1_sum/period2_sum for volume/amount/revenue metrics;
-      use period1_mean/period2_mean for rate/score/satisfaction metrics.
-      For columns with "score", "rating", "satisfaction", or "nps" in the name, ALWAYS use mean.
+Each column in the delta data includes a "col_hint" field. Use it to decide how to handle each column:
+
+  col_hint = "nps_scale" or column_type = "nps":
+    Use the pre-computed period1_nps / period2_nps breakdown.
+    NPS score = (Promoters% − Detractors%) × 100, range −100 to +100.
+    previous_value and current_value = the NPS score (e.g. "+46.5", "+41.4").
+    Explanation must mention Promoter / Passive / Detractor counts for both periods.
+    Still call run_significance_test using period1_values and period2_values.
+
+  col_hint = "score":
+    Use period1_mean / period2_mean (NOT sum) for compute_percentage_change.
+    Do not show currency symbols.
+
+  col_hint = "currency":
+    Use period1_sum / period2_sum for compute_percentage_change.
+    Always include the currency symbol in previous_value, current_value, and explanation
+    (e.g. "$4,200" not "4200"). Infer currency from column name or data context.
+
+  col_hint = "volume":
+    Use period1_sum / period2_sum for compute_percentage_change.
+    No currency symbol needed.
+
+  col_hint = "status":
+    Report actual counts per category in previous_value and current_value
+    (e.g. "32 Active, 8 Inactive") — NOT just percentages.
+    Counts are more meaningful for stakeholders tracking numbers of accounts, users, etc.
+
+  col_hint = "categorical":
+    Compare % distributions. Only include if a category shifted by more than 5%.
+
+  col_hint = "general":
+    Use your best judgment based on the column name and values.
+
+1. For EVERY numeric column call all three tools:
+   a. compute_percentage_change — choose sum or mean based on col_hint above.
    b. detect_outliers — pass the period1_values list.
    c. run_significance_test — pass period1_values and period2_values.
 
-1a. For NPS columns (column_type = "nps") — use the pre-computed nps_breakdown instead of raw values:
-   - Report period1_nps and period2_nps breakdowns: Promoters, Passives, Detractors, and NPS score.
-   - NPS score = (Promoters% − Detractors%) × 100, range −100 to +100.
-   - previous_value and current_value should show the NPS score (e.g. "+46.5" and "+41.4").
-   - The explanation must mention the Promoter/Passive/Detractor breakdown for both periods.
-   - Still call run_significance_test using period1_values and period2_values.
-
 2. For categorical columns — compare distributions across categories.
-   Only include a categorical finding if a category shifted by more than 5 percentage points.
-   Express categorical shifts using the % symbol — never use "percentage points".
-   Example: "the share of completed transactions decreased by 8%" not "decreased by 8 percentage points".
-   For status-type columns (e.g. account_status, status, active/inactive):
-   - Report the actual counts (e.g. "32 Active, 8 Inactive") in previous_value and current_value.
-   - NOT just percentages — counts are more meaningful for stakeholders tracking account numbers.
+   Only include a categorical finding if a category shifted by more than 5%.
+   Express ALL shifts using the % symbol — never write "percentage points".
 
 3. Set flags ONLY based on tool results:
    - is_outlier = true ONLY if detect_outliers returned has_outliers: true
@@ -405,7 +501,7 @@ def call_llm(deltas: list[dict], period1_name: str = "Period 1", period2_name: s
 
     delta_json = json.dumps(deltas, indent=2)
 
-    # Derive domain from the period 1 file name for domain-aware explanations
+    # Derive domain from file name, then fall back to column name analysis
     p1_lower = period1_name.lower()
     if p1_lower.startswith("product"):
         domain = "Product"
@@ -416,7 +512,23 @@ def call_llm(deltas: list[dict], period1_name: str = "Period 1", period2_name: s
     elif p1_lower.startswith("mixed"):
         domain = "Mixed"
     else:
-        domain = "Business"
+        # Infer domain from column names in the delta data
+        col_names = " ".join(d.get("column_name", "").lower() for d in deltas)
+        if any(k in col_names for k in ("session", "signup", "conversion",
+                                         "click", "campaign", "traffic",
+                                         "impression", "ctr", "acquisition")):
+            domain = "Marketing"
+        elif any(k in col_names for k in ("revenue", "sales", "product_line",
+                                           "earnings", "profit", "mrr", "arr")):
+            domain = "Revenue"
+        elif any(k in col_names for k in ("payment", "csat", "response_time",
+                                           "transaction", "checkout", "latency")):
+            domain = "Product"
+        elif any(k in col_names for k in ("account", "nps", "account_status",
+                                           "tier", "subscription")):
+            domain = "Mixed"
+        else:
+            domain = "Business"
 
     user_message = (
         f"You are comparing two reporting periods:\n"
