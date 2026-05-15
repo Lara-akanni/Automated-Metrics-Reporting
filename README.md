@@ -2,6 +2,8 @@
 
 > A GenAI-powered app that compares two Excel datasets across time periods, detects all changes, and generates a narrative-driven PDF report for analyst review — replacing a hours-long manual workflow.
 
+**Live app:** [automated-metrics-reporting.streamlit.app](https://automated-metrics-reporting.streamlit.app/)
+
 ---
 
 ## Table of Contents

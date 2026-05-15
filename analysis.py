@@ -497,7 +497,13 @@ def call_llm(deltas: list[dict], period1_name: str = "Period 1", period2_name: s
     ------
     ValueError if the LLM response cannot be parsed as valid JSON.
     """
-    client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError(
+            "GEMINI_API_KEY is not set. Add it to your .env file (local) "
+            "or Streamlit Secrets (deployed)."
+        )
+    client = genai.Client(api_key=api_key)
 
     delta_json = json.dumps(deltas, indent=2)
 
