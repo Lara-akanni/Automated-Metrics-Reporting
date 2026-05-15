@@ -155,19 +155,22 @@ Layout clean and complete ✅. Same wording issues as insights (percentage point
 | **Total** | **5/6** | |
 | **Pass (5+)?** | **Yes (borderline)** | |
 
-### Observations
+### Retest — After Fixes (2025-05-15)
 
-**What worked:**
-- All 3 engineered change areas detected ✅
-- PDF layout clean ✅
-- Product line distribution shift correctly identified ✅
+**Changes made:** Currency symbols in insights, outlier value descriptions, "percentage points" → "%" fixed in `analysis.py`. Dollar sign LaTeX rendering fixed in `app.py`.
 
-**Issues to fix before final score:**
-1. Currency symbol in revenue insights
-2. Outlier value detail in explanations
-3. "Percentage points" → "%" in all insights
+| Dimension | Score (1–3) | Notes |
+|---|---|---|
+| Change Detection | 3 | 4 findings returned — all engineered changes covered ✅ |
+| Explanation Quality | 3 | Currency shown correctly, outlier values described specifically, % symbol used throughout |
+| **Total** | **6/6** | |
+| **Pass (5+)?** | **Yes** | |
 
-*Retest scheduled after prompt fixes.*
+**Improvements confirmed:**
+- Currency symbols displaying correctly in app and PDF ✅
+- Outlier explanation now specifies the unusual value ✅
+- "Percentage points" replaced with "%" throughout ✅
+- 4 findings (down from 5) — clean, no noise ✅
 
 ---
 
