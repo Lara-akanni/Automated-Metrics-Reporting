@@ -210,18 +210,48 @@ def compute_deltas(df1: pd.DataFrame, df2: pd.DataFrame) -> list[dict]:
             vals1 = random.sample(all_vals1, min(MAX_SAMPLE, len(all_vals1)))
             vals2 = random.sample(all_vals2, min(MAX_SAMPLE, len(all_vals2)))
 
-            deltas.append({
-                "column_name":      col,
-                "column_type":      "numeric",
-                "period1_sum":      round(float(series1.sum()),  4),
-                "period2_sum":      round(float(series2.sum()),  4),
-                "period1_mean":     round(float(series1.mean()), 4),
-                "period2_mean":     round(float(series2.mean()), 4),
-                "period1_values":   vals1,
-                "period2_values":   vals2,
+            delta_entry = {
+                "column_name":       col,
+                "column_type":       "numeric",
+                "period1_sum":       round(float(series1.sum()),  4),
+                "period2_sum":       round(float(series2.sum()),  4),
+                "period1_mean":      round(float(series1.mean()), 4),
+                "period2_mean":      round(float(series2.mean()), 4),
+                "period1_values":    vals1,
+                "period2_values":    vals2,
                 "period1_row_count": len(vals1),
                 "period2_row_count": len(vals2),
-            })
+            }
+
+            # ----- NPS detection -----
+            # If the column name contains "nps" and all values are in 0–10 range,
+            # bucket into Promoters (9–10), Passives (7–8), Detractors (0–6)
+            # and compute the NPS score for each period.
+            col_lower = col.lower()
+            if "nps" in col_lower:
+                s1_full = pd.Series(all_vals1)
+                s2_full = pd.Series(all_vals2)
+                if s1_full.between(0, 10).all() and s2_full.between(0, 10).all():
+                    def _nps_breakdown(vals: pd.Series) -> dict:
+                        total = len(vals)
+                        promoters   = int((vals >= 9).sum())
+                        passives    = int(((vals >= 7) & (vals <= 8)).sum())
+                        detractors  = int((vals <= 6).sum())
+                        nps_score   = round(
+                            (promoters / total - detractors / total) * 100, 1
+                        ) if total > 0 else 0
+                        return {
+                            "promoters":  promoters,
+                            "passives":   passives,
+                            "detractors": detractors,
+                            "nps_score":  nps_score,
+                            "total":      total,
+                        }
+                    delta_entry["column_type"]    = "nps"
+                    delta_entry["period1_nps"]    = _nps_breakdown(s1_full)
+                    delta_entry["period2_nps"]    = _nps_breakdown(s2_full)
+
+            deltas.append(delta_entry)
 
         else:
             # ----- Categorical column -----
@@ -275,16 +305,27 @@ You have three tools — always call them before writing any finding:
 
 INSTRUCTIONS
 
-1. For EVERY numeric column call all three tools:
+1. For EVERY numeric column (column_type = "numeric") call all three tools:
    a. compute_percentage_change — use period1_sum/period2_sum for volume/amount/revenue metrics;
-      use period1_mean/period2_mean for rate/score metrics.
+      use period1_mean/period2_mean for rate/score/satisfaction metrics.
+      For columns with "score", "rating", "satisfaction", or "nps" in the name, ALWAYS use mean.
    b. detect_outliers — pass the period1_values list.
    c. run_significance_test — pass period1_values and period2_values.
 
-2. For categorical columns — compare the percentage distributions across categories.
+1a. For NPS columns (column_type = "nps") — use the pre-computed nps_breakdown instead of raw values:
+   - Report period1_nps and period2_nps breakdowns: Promoters, Passives, Detractors, and NPS score.
+   - NPS score = (Promoters% − Detractors%) × 100, range −100 to +100.
+   - previous_value and current_value should show the NPS score (e.g. "+46.5" and "+41.4").
+   - The explanation must mention the Promoter/Passive/Detractor breakdown for both periods.
+   - Still call run_significance_test using period1_values and period2_values.
+
+2. For categorical columns — compare distributions across categories.
    Only include a categorical finding if a category shifted by more than 5 percentage points.
    Express categorical shifts using the % symbol — never use "percentage points".
    Example: "the share of completed transactions decreased by 8%" not "decreased by 8 percentage points".
+   For status-type columns (e.g. account_status, status, active/inactive):
+   - Report the actual counts (e.g. "32 Active, 8 Inactive") in previous_value and current_value.
+   - NOT just percentages — counts are more meaningful for stakeholders tracking account numbers.
 
 3. Set flags ONLY based on tool results:
    - is_outlier = true ONLY if detect_outliers returned has_outliers: true
@@ -304,7 +345,9 @@ INSTRUCTIONS
     include the appropriate currency symbol (e.g. "$4,200" not "4200") in previous_value,
     current_value, and the explanation.
 
-5. Explanations must reference the actual period names provided (not "Period 1" / "Period 2").
+5. Always use the exact column name from the data as the metric_name and in explanations.
+   Never use generic terms like "score" or "value" — use the full name (e.g. "nps_score", "account_status").
+   Explanations must reference the actual period names provided (not "Period 1" / "Period 2").
    Use the file/period names given in the data context below.
 
 6. Write explanations using domain-appropriate language based on the report domain provided:

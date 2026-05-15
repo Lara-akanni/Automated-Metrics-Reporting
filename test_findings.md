@@ -176,32 +176,30 @@ Layout clean and complete ✅. Same wording issues as insights (percentage point
 
 ## Run 4 — Example 4: Mixed Numeric and Categorical
 
-**Date:**
+**Date:** 2025-05-15
 **File pair:** `sample_data/example4_mixed/`
 **Engineered changes:** 8 of 40 accounts flipped Active → Inactive | Volume ↓ for inactive accounts | NPS score ↓
 
-### App Findings
-*(Paste or summarise what the app returned here)*
+### Initial Run Issues (pre-fix)
 
-| # | Metric Name | Period 1 | Period 2 | Direction | Outlier? | Significant? |
-|---|---|---|---|---|---|---|
-| 1 | | | | | | |
-| 2 | | | | | | |
-| 3 | | | | | | |
+1. **Account status shown as percentages** — Active/Inactive reported as share (%) instead of actual counts (e.g. "32 Active, 8 Inactive"). Counts are more meaningful for stakeholders tracking account numbers.
+2. **"Score" in insight instead of full name** — explanation used generic "score" instead of the exact column name (e.g. "nps_score"). Fixed by instructing LLM to always use exact column names.
+3. **NPS values incorrect** — showing 46.525 → 41.425 (raw numeric mean/sum), not proper NPS calculation. NPS responses (0–10 scale) should be bucketed into Promoters (9–10), Passives (7–8), Detractors (0–6), and NPS score = (Promoters% − Detractors%) × 100.
 
-**Explanations (copy from app):**
->
+### Fixes Applied
+- `compute_deltas()`: NPS detection added — if column name contains "nps" and values are 0–10, automatically bucket into Promoters/Passives/Detractors and compute NPS score
+- System prompt: status-type categoricals report counts not just percentages
+- System prompt: always use exact column name in metric_name and explanations
+- System prompt: for score/rating/nps columns use mean not sum
 
-### Scoring
+### Scoring (pending retest)
 
 | Dimension | Score (1–3) | Notes |
 |---|---|---|
-| Change Detection | | |
-| Explanation Quality | | |
-| **Total** | **/6** | |
-| **Pass (5+)?** | | |
-
-### Observations
+| Change Detection | — | Pending retest |
+| Explanation Quality | — | Pending retest |
+| **Total** | **—/6** | |
+| **Pass (5+)?** | **Pending** | |
 
 ---
 
